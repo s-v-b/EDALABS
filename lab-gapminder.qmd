@@ -117,8 +117,6 @@ Visit [https://www.youtube.com/embed/jbkSRLYSojo](https://www.youtube.com/embed/
 :::
 
 
-## Do It Yourself with `R`
-
 We will reproduce the animated demonstration using
 
 -   `ggplot2`: an implementation of *grammar of graphics* in \`R
@@ -179,7 +177,7 @@ example metapackages like `tidyverse`.
 
 :::
 
-### Have a look at `gapminder` dataset
+## Have a look at `gapminder` dataset
 
 -   A table has a *schema*: a list of named *columns*, each with a given
     type
@@ -389,9 +387,8 @@ The ability to use data masking is one of the great strengths of the `R` program
 
 :::
 
-## Static plotting
+## Static plotting: First attempt
 
-### First attempt
 
 -   Define a plot with respect to `gapminder_2002`
 
@@ -456,8 +453,10 @@ p +
 :::
 
 ::: {.callout-note collapse="true"}
+
 You need to add a `geom_` layer to your `ggplot` object, in this case
 `geom_point()` will do.
+
 :::
 
 We are building a graphical object (a `ggplot` object) around a data
@@ -485,7 +484,7 @@ when comparing to the Gapminder demonstration, we can spot that
 
 We will add layers to the graphical object to complete the plot
 
-### Second attempt: display more information
+## Second attempt: display more information
 
 -   Map `continent` to color (use `aes()`)
 -   Map `pop` to bubble size (use `aes()`)
@@ -526,7 +525,7 @@ along the coordinate axes provide enough information.
 :::
 :::
 
-### Scaling
+## Scaling
 
 In order to pay tribute to Hans Rosling, we need to take care of two
 *scaling* issues:
@@ -598,7 +597,7 @@ ptchwrk + plot_annotation(
 :::
 
 
-### In perspective
+## In perspective
 
 -   Add a plot title
 -   Make axes titles
@@ -645,7 +644,7 @@ What should be the respective purposes of Title, Subtitle, Caption, ... ?
 
 :::
 
-### Theming using `ggthemes`
+## Theming using `ggthemes` (or not)
 
 -   Theming
 
@@ -675,7 +674,7 @@ p +
   theme_economist()
 ```
 
-### Tuning scales
+## Tuning scales
 
 Use `scale_color_manual(...)` to hand-tune the color aesthetic mapping.
 
@@ -738,7 +737,7 @@ p + theme(legend.position = "none")
 
 :::
 
-### Zooming on a continent
+## Zooming on a continent
 
 ```{r}
 zoom_continent <- 'Europe'  # choose another continent at your convenience 
@@ -900,7 +899,7 @@ q <- filter(gapminder, FALSE) %>%
    aes(size = pop) +
    aes(text = country) +                   #
    aes(fill = continent) +
-   aes(frame = year) +                     #
+   # aes(frame = year) +                     #
   geom_point(alpha=.5, colour='black') +
   scale_x_log10() +
   scale_size_area(max_size = 15,
@@ -942,5 +941,26 @@ q <- filter(gapminder, FALSE) %>%
 ```
 
 :::
+
+:::
+
+
+## More material
+
+::: {.content-visible when-format="html"} 
+
+```{r}
+#| echo: false 
+#| eval: true
+knitr::include_url("https://www.youtube.com/embed?v=3_ZqrTsaO4k&list=PL4IzsxWztPdnCC_kMCYKrd_t6cViMhBrD&index=12")
+```
+
+:::
+
+
+
+::: {.content-visible when-format="pdf"} 
+
+Visit [Data visualization using ggplot2 and its extensions, UseR 2021 Tutorial](https://www.youtube.com/embed?v=3_ZqrTsaO4k&list=PL4IzsxWztPdnCC_kMCYKrd_t6cViMhBrD&index=12)
 
 :::
