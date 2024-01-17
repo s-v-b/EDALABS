@@ -144,6 +144,7 @@ Insist on the difference between *installing* and *loading* a package
 
 The (usually very long)  list of installed packages can be obtained 
 by a simple function call. 
+
 ```{r}
 df <- installed.packages()
 head(df)
@@ -167,9 +168,11 @@ loadedNamespaces()
 ```
 
 Note that we did not load explicitly some of the `loadedNamespaces`.
+
 ```{r}
 setdiff(loadedNamespaces(), to_be_loaded)
 ```
+
 Many of the loaded packages were loaded while loading other packages, for 
 example metapackages like `tidyverse`. 
 
@@ -717,6 +720,12 @@ Choosing a color scale is a difficult task
 ::: {.callout-tip title="solution"}
 Mimnimalist themes are often a good pick.
 
+
+```{r}
+old_theme <- theme_set(tinythemes::theme_ipsum_rc())
+```
+
+
 ```{r}
 #| label: full-monty
 p <- p +
@@ -724,11 +733,10 @@ p <- p +
                   labels= scales::label_number(scale=1/1e6,
                                                suffix=" M")) +
    scale_color_manual(values = neat_color_scale) +
-   theme_minimal() +
     labs(title= glue("Gapminder  {min(gapminder$year)}-{max(gapminder$year)}"),
          x = "Yearly Income per Capita",
          y = "Life Expectancy",
-       caption="From sick  and poor (bottom left) to healthy and rich (top right)")
+       caption="From sick  and poor (bottom left) to healthy and rich (top right)")   
 
 p + theme(legend.position = "none") 
 ```
@@ -792,7 +800,6 @@ p +
                   labels= scales::label_number(scale=1/1e6,
                                                suffix=" M")) +
    scale_color_manual(values = neat_color_scale) +
-   theme_minimal() +
    theme(legend.position = "none") +
     labs(title= glue("Gapminder  {min(gapminder$year)}-{max(gapminder$year)}"),
          x = "Yearly Income per Capita",
@@ -934,7 +941,6 @@ q <- filter(gapminder, FALSE) %>%
 
 (p %+% gapminder +
  facet_null() +
-  theme_minimal() +
  aes(frame=year)) %>%
  plotly::ggplotly(height = 500, width=750)
 
@@ -964,3 +970,6 @@ knitr::include_url("https://www.youtube.com/embed?v=3_ZqrTsaO4k&list=PL4IzsxWztP
 Visit [Data visualization using ggplot2 and its extensions, UseR 2021 Tutorial](https://www.youtube.com/embed?v=3_ZqrTsaO4k&list=PL4IzsxWztPdnCC_kMCYKrd_t6cViMhBrD&index=12)
 
 :::
+
+
+Read [Visualization in R for Data Science](https://r4ds.hadley.nz/data-visualize)

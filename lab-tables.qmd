@@ -8,14 +8,13 @@ format:
       echo: fenced
   pdf:
     include-in-header:
-      - text: "\\lhead{{\\sf  Analyse  données \\\\ TP Datavis}}"
-    output-file: lab-gapminder.pdf
-  markdown:
-    output-file: toto.md
+      - text: "\\lhead{{\\sf  EDA \\\\ TP Tables}}"
+    output-file: lab-tables.pdf
+
 
 
 execute: 
-  eval: false
+  eval: true
   echo: fenced
   collapse: true
   
@@ -53,19 +52,25 @@ engine: knitr
 :::
 
 
-## Packages installation and loading
+## Packages installation and loading  (again)
 
 We will use the following packages. If needed, we install them. 
 ```{r}
 #| label: setup-packages
+#| message: false
+#| warning: false
+#| include: false
 to_be_loaded <- c("tidyverse", 
+                  "lobstr",
                   "ggforce",
                   "nycflights13",
                   "patchwork", 
                   "glue",
                   "DT", 
                   "viridis",
-                  "sqldf")
+                  "sqldf", 
+                  "dbplyr",
+                  "dtplyr")
 
 for (pck in to_be_loaded) {
   if (!require(pck, character.only = T)) {
@@ -76,7 +81,9 @@ for (pck in to_be_loaded) {
 ```
 
 
-
+```{r}
+old_theme <- theme_set(theme_minimal())
+```
 
 Check [nycflights13](https://nycflights13.tidyverse.org) for any explanation concerning the tables and their columns. 
 
@@ -141,7 +148,9 @@ airports %>%
 
 :::
 
-### Find all flights that
+## First Queries (the `dplyr` way)
+
+Find all flights that
 
 - Had an arrival delay of two or more hours
 
@@ -163,6 +172,13 @@ flights %>%
 flights_lite %>% 
   filter(arr_delay >= 120) %>% 
   show_query()
+```
+
+
+```{r}
+flights_lite %>% 
+  filter(arr_delay >= 120) %>% 
+  explain()
 ```
 
 :::
@@ -231,9 +247,28 @@ Package `stringr` could be useful.
 ```{r}
 airlines %>% 
   filter(stringr::str_starts(name, "United") |
-         stringr::str_starts(name, "American")  |
-          stringr::str_starts(name, "Delta"))
- 
+        stringr::str_starts(name, "American") |
+        stringr::str_starts(name, "Delta"))
+
+airlines %>% 
+  filter(stringr::str_detect(name, ("United|American|Delta"))) %>% 
+  pluck("carrier")
+```
+
+```{r}
+airlines_lite %>% 
+  filter(stringr::str_starts(name, "United") |
+        stringr::str_starts(name, "American") |
+        stringr::str_starts(name, "Delta")) %>% 
+  show_query()
+```
+
+```{.sql}
+SELECT *
+FROM `nycflights13::airlines`
+WHERE "name" LIKE 'United%' OR 
+      "name" LIKE 'American%' OR 
+      "name" LIKE 'Delta%' ;
 ```
 
 [`stringr` is part of tidyverse](https://stringr.tidyverse.org)
@@ -244,9 +279,40 @@ airlines %>%
 
 ::: {.callout-note title="Solution"}
 
-```{r}
-pacman::p_load(stringr)
+We build on the tip above to extract the matching airlines codes. 
 
+We may proceed using a  *subquery*
+
+```{r}
+flights %>% 
+  filter(carrier %in% (
+        airlines %>% 
+        filter(stringr::str_detect(name, ("United|American|Delta"))) %>% 
+        pluck("carrier")
+      )
+) %>% 
+head(6)
+```
+
+```{r}
+flights_lite %>% 
+  filter(carrier %in% c("AA", "DL", "UA")) %>% 
+  show_query()
+```
+
+```{.sql}
+SELECT *
+FROM `nycflights13::flights`
+WHERE carrier IN (SELECT carrier 
+  FROM `nycflights13::airlines`
+  WHERE "name" LIKE 'United%' OR 
+        "name" LIKE 'American%' OR 
+        "name" LIKE 'Delta%')
+) ; 
+```
+We may also rely on a `NATURAL JOIN`.
+
+```{r}
 airlines %>% 
   filter(str_detect(name, "United|Delta|American")) %>% 
   inner_join(flights) %>% 
@@ -254,6 +320,15 @@ airlines %>%
 #  sample_n(size=6)    # random sampling 
 ```
 
+
+```{r}
+airlines_lite %>% 
+  filter(stringr::str_starts(name, "United") |
+        stringr::str_starts(name, "American") |
+        stringr::str_starts(name, "Delta")) %>% 
+  inner_join(flights_lite) %>% 
+  show_query()
+```
 :::
 
 :::
@@ -268,10 +343,38 @@ airlines %>%
 ```{r}
 flights %>% 
   filter(month %in% c(7,8,9)) %>% 
-  nrow()
+  count()
+```
+
+
+A more ambitious (and sustainable) approach relies on the date/time manipulation function from `lubridate`
+
+```{r}
+flights %>% 
+  filter(lubridate::month(time_hour) %in% 7:9) %>% 
+  head()
+```
+
+or even 
+
+```{r}
+my_locale <- 'en_US.UTF-8'
+
+flights %>% 
+  filter(lubridate::month(time_hour, label=T, abbr=F, 
+                          locale=my_locale) %in% 
+                    c('juillet', 'August', 'September')) %>% 
+  head()
 ```
 
 :::
+
+:::
+
+
+::: {.callout-important}
+
+When manipulating temporal information (date, time, duration), keep an eye on [what `lubridate` offers](https://lubridate.tidyverse.org). The API closely parallels what RDMS and Python offer. 
 
 :::
 
@@ -302,7 +405,7 @@ flights %>%
 flights %>% 
   filter(dep_delay > 60, 
          arr_delay < dep_delay -30) %>% 
-  nrow()
+  count()
 ```
 
 :::
@@ -317,18 +420,33 @@ flights %>%
 ::: {.callout-note title="Solution"}
 
 ```{r}
-
+flights %>% 
+  filter(dep_time<=600, dep_time>0) %>% 
+  head()
 ```
 
+
+```{r}
+flights %>% 
+  filter(lubridate::hour(time_hour)<=5  | (
+         lubridate::hour(time_hour)==6 & minute(time_hour)==0)) %>% 
+  head()
+```
 :::
 
 :::
 
+::: {.callout-important}
 
+Read [`filter()` in R for Data Science 1st Ed](https://r4ds.had.co.nz/transform.html#filter-rows-with-filter)
 
-### Missing data
+Read [Chapter Transform in  R for Data Science 2nd Ed](https://r4ds.hadley.nz/data-transform)
 
-- How many flights have a missing `dep_time`? 
+:::
+
+## Missing data
+
+- How many flights  per `origin` have a missing `dep_time`? 
 
 ::: {.content-visible when-profile="solution"}
 
@@ -337,8 +455,31 @@ flights %>%
 ```{r}
 flights %>% 
   filter(is.na(dep_time)) %>% 
-  nrow()
+  count(by=origin)
 ```
+
+```{r}
+flights_lite %>% 
+  filter(is.na(dep_time)) %>% 
+  count(by=origin) %>% 
+  show_query()
+```
+
+Not far from a spontaneous answer! We could obtain the latter anyway.
+
+```{r}
+flights_lite %>% 
+  filter(is.na(dep_time)) %>% 
+  group_by(origin) %>% 
+  summarise(n=n()) %>% 
+  show_query()
+```
+
+Note that combining `dplyr` verbs and pipes (`%>%` or `|>`) provides a much 
+more readable and modular approach than vanilla `SQL`. 
+
+- Using `dplyr`  and pipe, the order in which operation are executed is clear and obvious. In SQL, it is counterintuitive.
+-  
 
 :::
 
@@ -354,7 +495,7 @@ In table `flights`, `r nrow(filter(flights, is.na(dep_time)))` rows have a missi
 - What other variables are missing? 
 
 
-::: {.callout-note}
+::: {.callout-important}
 
 The introduction to [`tidyselect`](https://tidyselect.r-lib.org) is a must read. 
 
@@ -373,6 +514,8 @@ flights %>%
   filter(value) %>% 
   select(name)
 ```
+
+
 
 
 ```{r}
@@ -435,7 +578,7 @@ flights %>%
 
 :::
 
-### Arrange
+## Arrange
 
 - How could you use `arrange()` to sort all missing values to the start? (Hint: use `is.na()`).
 
@@ -518,6 +661,18 @@ flights %>%
   select(speed, distance, air_time, origin, dest, everything())
 ```
 
+
+This is an overkill. We are sorting in order to perform maximum selection. 
+Recall that sorting requires more comparisons than selection. The comparison 
+between sorting and selecting with respect to data shuffling is even less favourable.
+
+```{r}
+flights %>% 
+  filter(!is.na(air_time)) %>% 
+  mutate(speed = distance/air_time) %>%
+  slice_max(n=10, speed) %>%
+  select(speed, distance, air_time, origin, dest, everything())
+```
 :::
 
 :::
@@ -543,7 +698,7 @@ The database provides all we need with columns `distance` and `air_time`.  Other
 ```{r}
 flights %>% 
   arrange(desc(distance)) %>% 
-  select(distance, dest, origin, everything())
+  distinct(distance, dest, origin)
 ```
 
 :::
@@ -562,12 +717,20 @@ flights %>%
   select(distance, dest, origin, everything())
 ```
 
-:::
+Avoid an overkill ...
+
+```{r}
+flights %>%
+  distinct(distance, origin, dest) %>% 
+  slice_min(distance, n=10)
+```
 
 :::
 
+:::
 
-### Select 
+
+## Projection
 
 - Brainstorm as many ways as possible to select `dep_time`, `dep_delay`, `arr_time`, and `arr_delay` from `flights.`
 
@@ -640,6 +803,13 @@ flights %>%
   filter(across(any_of(vars), is.numeric))
 ```
 
+
+```{r}
+flights %>% 
+  filter(if_any(vars, \(x) x<0)) %>% 
+  relocate(ends_with('delay')) %>% 
+  head()
+```
 :::
 
 :::
@@ -685,7 +855,7 @@ select(flights, contains("TIME", ignore.case=FALSE))  %>%
 :::
 
 
-### Mutations
+## Mutations
 
 
 - Currently `dep_time` and `sched_dep_time` are convenient to look at, but hard to compute with because they’re not really continuous numbers. Convert them to a more convenient representation of number of minutes since midnight.
@@ -864,15 +1034,73 @@ flights %>%
 
 
 
-### Aggregations 
+## Aggregations 
 
 
 - Brainstorm at least 5 different ways to assess the typical delay characteristics of a group of flights. Consider the following scenarios:
-  + A flight is 15 minutes early 50% of the time, and 15 minutes late 50% of the time.
+  + A flight is 15 minutes early 50% of the time, and 15 minutes late 10% of the time.
   + A flight is always 10 minutes late.
   + A flight is 30 minutes early 50% of the time, and 30 minutes late 50% of the time.
   + 99% of the time a flight is on time. 1% of the time it’s 2 hours late.
-  
+
+
+::: {.content-visible when-profile="solution"}
+
+::::: {.callout-note title="Solution"}
+
+
+```{r}
+flights_gp <- flights %>% 
+  group_by(flight, carrier, dest, origin) 
+```
+
+
+```{r}
+flights_gp %>% 
+  summarize(q50 = quantile(arr_delay,.5, , na.rm=T), 
+            q90 = quantile(arr_delay,.9, , na.rm=T),
+            .groups="drop") %>% 
+  filter(q50<=-15, q90>=15) %>% 
+  head()
+```
+
+Another approach builds on experimental `reframe()`
+
+```{r}
+quantile_df <- function(x, probs = c(0.5, 0.9)) {
+  tibble(
+    val = quantile(x, probs, na.rm = TRUE),
+    quant = probs
+  )
+}
+```
+
+```{r}
+tmp <- flights_gp %>% 
+  reframe(q= quantile_df(arr_delay)) %>% 
+  unnest(cols=q)
+```
+
+`reframe()` generates a list-column (a column is tibble-valued). The result 
+has to be *unnested*. 
+
+```{r}
+tmp %>% 
+  pivot_wider(
+    id_cols=c(flight, carrier, dest, origin),
+    names_from= quant,
+    values_from= val,
+    names_prefix="q"
+  ) %>% 
+  head()
+```
+
+
+:::::
+
+:::
+
+
 ```{r}
 flights %>% 
   group_by(dest) %>% 
@@ -1025,7 +1253,8 @@ flights %>%
 :::
 
 
-### Miscellanea
+## Miscellanea
+
 
 - Which `carriers` serve all destination airports (in the table) ?
 
@@ -1035,12 +1264,14 @@ flights %>%
 
 ```{r}
 flights %>% 
-  distinct(carrier, dest) %>% 
-  group_by(carrier) %>% 
-  summarise(n_dest=n(), .groups=NULL) %>% 
-  filter(n_dest==nrow(distinct(flights, dest))) %>% 
-  select(carrier)
+  distinct(origin, dest) %>% 
+  mutate(tot_dest = n_distinct(dest)) %>% 
+  group_by(tot_dest, origin) %>% 
+  summarise(n_dest=n(), .groups="drop") %>% 
+  filter(n_dest==tot_dest) 
 ```
+
+{{< fa hand-point-right >}} Verb `mutate()` handles function `n_distinct()` as a window function with trivial window. 
 
 :::
 
@@ -1049,6 +1280,7 @@ flights %>%
 
 ::: {.content-visible when-profile="solution"} 
 
+::: {.callout-note}
 There is  no need to perform grouping and aggregation to answer this question. Basic relational algebra is enough.  This operation is called *division* in SQL language
 
 ```{r}
@@ -1072,6 +1304,9 @@ More generally if $S$ has schema $\mathcal{S}(B)$
 $$
 R \div S = \pi_A(R) \setminus \left(\pi_A \left(\pi_A(R) \times \pi_B(S) \setminus R \right)\right)
 $$
+
+:::
+
 
 :::
 
@@ -1256,7 +1491,7 @@ flights %>%
 
 ::: {.callout-note collapse="true"}
 
-`lag()`  is an example of window function. If we were using `SQL`, we would define a `WINDOW`  using  an expression like 
+`lag()`  is an example of *window* function. If we were using `SQL`, we would define a `WINDOW`  using  an expression like 
 
 ```{.sql}
 WINDOW w As (PARTITION BY origin ORDER BY year, month, day, sched_dep_time)
@@ -1399,7 +1634,10 @@ flights %>%
 
 :::
 
+## References
 
-[R4Data Science Tidy](https://r4ds.had.co.nz/tidy-data.html#tidy-data-1)
-
-
+- [R4Data Science Tidy](https://r4ds.had.co.nz/tidy-data.html#tidy-data-1)
+- [Benchmarking](https://h2oai.github.io/db-benchmark/)
+- [`dplyr` and `vctrs`](https://www.tidyverse.org/blog/2020/04/dplyr-1-0-0-and-vctrs/)
+- [Posts on `dplyr`](https://www.tidyverse.org/tags/dplyr/)
+- [Window functions on `dplyr`](https://dplyr.tidyverse.org/articles/window-functions.html)
