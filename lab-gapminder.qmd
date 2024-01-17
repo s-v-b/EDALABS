@@ -3,19 +3,11 @@
 format:
   html:
     output-file: lab-gapminder.html
-    execute:
-      eval: true
-      echo: fenced
   pdf:
-    include-in-header:
-      - text: "\\lhead{{\\sf  Analyse  données \\\\ TP Datavis}}"
     output-file: lab-gapminder.pdf
-  markdown:
-    output-file: toto.md
-
 
 execute: 
-  eval: false
+  eval: true
   echo: fenced
   collapse: true
   
@@ -146,14 +138,19 @@ The (usually very long)  list of installed packages can be obtained
 by a simple function call. 
 
 ```{r}
+#| collapse: true
+#| echo: true
 df <- installed.packages()
 head(df)
 ```
+
 Note that the output is tabular (it is a `matrix` and an `array`) that contains much more than the names of 
 installed packages. If we just want the names of the installed packages, we can 
 extract the column named `Package`. 
 
 ```{r}
+#| collapse: true
+#| echo: true
 df[1:5, c("Package", "Version") ]
 ```
 
@@ -164,12 +161,16 @@ Loading a package amounts to make a number of objects available in the current s
 The objects are made available though `Namespaces`.
 
 ```{r}
+#| collapse: true
+#| echo: true
 loadedNamespaces()
 ```
 
 Note that we did not load explicitly some of the `loadedNamespaces`.
 
 ```{r}
+#| collapse: true
+#| echo: true
 setdiff(loadedNamespaces(), to_be_loaded)
 ```
 
@@ -196,6 +197,8 @@ Dataframes
 
 ```{r}
 #| results: markup
+#| collapse: true
+#| echo: true
 gapminder <- gapminder::gapminder
 
 glimpse(gapminder)
@@ -217,6 +220,7 @@ glimpse(head(gapminder, 0))
 ```
 
 :::
+
 :::
 
 ::: {.content-visible when-profile="solution"} 
@@ -229,6 +233,9 @@ have null content
 
 ```{r}
 #| results: markup
+#| collapse: true
+#| echo: true
+#| 
 gapminder %>% 
   filter(FALSE) %>% 
   glimpse()
@@ -238,7 +245,7 @@ gapminder %>%
 
 :::
 
-### Get a feeling of the dataset
+## Get a feeling of the dataset
 
 Pick two random rows for each continent using `slice_sample()`
 
@@ -281,13 +288,13 @@ Is the `gapminder` table redundant?
 `gapminder` is redundant: column `country` completely determines the content of 
 column `continent`. In database parlance, we have a functional dependancy: `country → continent` whereas the *key* of the table is made of columns `country, year`. 
 
-Column `gapminder` is not in Boyce-Codd Normal Form (BCNF), not even in Third Normal Form (3NF).
+Table `gapminder` is not in Boyce-Codd Normal Form (BCNF), not even in Third Normal Form (3NF).
 
 :::
 
 :::
 
-### Gapminder tibble (extract)
+## Gapminder tibble (extract)
 
 Extract/filter a subset of rows using `dplyr::filter(...)`
 
@@ -310,7 +317,7 @@ Note that equality testing is performed using `==` not `=` (which is used to imp
 :::
 
 
-### Filtering (selection $σ$ from database theory) : Picking one year of data
+## Filtering (selection $σ$ from database theory) : Picking one year of data
 
 
 There is simple way to filter  rows satisfying some condition. It consists 
@@ -366,7 +373,7 @@ Use `dplyr::filter()` to perform row filtering
 
 ::: {.content-visible when-profile="solution"} 
 
-::: {.callout-tip title="solution"}
+::::: {.callout-tip title="solution"}
 
 ```{r}
 #| label: gapminder_filtered_dplyr
@@ -386,7 +393,7 @@ Note that in stating the condition, we simply write `year==2002` even though
 The ability to use data masking is one of the great strengths of the `R` programming language.
 
 
-:::
+:::::
 
 :::
 
@@ -432,12 +439,16 @@ p <- p +
   aes(x=gdpPercap, y=lifeExp)
 p 
 ```
+
 :::
+
 :::
 
 ::: {.callout-note collapse="true"}
+
 Use `ggplot` object `p` and add a global aesthetic mapping `gdpPercap`
 and `lifeExp` to axes `x` and `y` (using `+` from `ggplot2`) .
+
 :::
 
 -   For each row, draw a point at coordinates defined by the mapping
@@ -452,7 +463,9 @@ and `lifeExp` to axes `x` and `y` (using `+` from `ggplot2`) .
 p +
   geom_point()
 ```
+
 :::
+
 :::
 
 ::: {.callout-note collapse="true"}
@@ -564,6 +577,7 @@ Motivate the proposed scalings.
 -   When is it important to use logarithmic scaling on some axis (in
     other contexts)?
 -   Why is it important to specify `scale_size_area()` ?
+
 :::
 
 ::: {.content-visible when-profile="solution"} 
@@ -579,6 +593,7 @@ p +
 ```
 
 :::
+
 :::
 
 ::: {.content-visible when-profile="solution"} 
@@ -597,6 +612,7 @@ ptchwrk + plot_annotation(
 ```
 
 :::
+
 :::
 
 
@@ -718,11 +734,11 @@ Choosing a color scale is a difficult task
 ::: {.content-visible when-profile="solution"} 
 
 ::: {.callout-tip title="solution"}
+
 Mimnimalist themes are often a good pick.
 
-
 ```{r}
-old_theme <- theme_set(tinythemes::theme_ipsum_rc())
+old_theme <- theme_set(theme_minimal())
 ```
 
 
@@ -744,6 +760,8 @@ p + theme(legend.position = "none")
 :::
 
 :::
+
+::::::: {.content-hidden when-profile="miashs"}
 
 ## Zooming on a continent
 
@@ -779,6 +797,7 @@ p_zoom_continent
 
 :::
 
+:::::::
 
 ## Adding labels
 
@@ -810,6 +829,8 @@ p +
 :::
 
 :::
+
+::::::: {.content-hidden when-profile="miashs"}
 
 ## Facetting
 
@@ -884,6 +905,7 @@ p %+% gapminder
 
 :::
 
+:::::::
 
 ## Animate for free with `plotly`
 

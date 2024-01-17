@@ -164,9 +164,18 @@ flights %>%
   nrow()
 ```
 
+```{r}
+flights_lite %>% 
+  filter(arr_delay >= 120) %>% 
+  count()  %>% 
+  show_query()
+```
+
 :::
 
 ::: {.callout-note title="Solution"}
+
+We can translate the `dplyr` pipeline into an `SQL` query.
 
 ```{r}
 flights_lite %>% 
@@ -174,6 +183,7 @@ flights_lite %>%
   show_query()
 ```
 
+We can even get some explanations
 
 ```{r}
 flights_lite %>% 
@@ -187,7 +197,7 @@ flights_lite %>%
 
 
 
-- Flew to Houston (IAH or HOU)
+- Flew to Houston (`IAH` or `HOU`)
 
 ::: {.content-visible when-profile="solution"}
 
@@ -1636,6 +1646,8 @@ flights %>%
 
 ## References
 
+
+- [Data transformation cheatsheet](https://rstudio.github.io/cheatsheets/html/data-transformation.html)
 - [R4Data Science Tidy](https://r4ds.had.co.nz/tidy-data.html#tidy-data-1)
 - [Benchmarking](https://h2oai.github.io/db-benchmark/)
 - [`dplyr` and `vctrs`](https://www.tidyverse.org/blog/2020/04/dplyr-1-0-0-and-vctrs/)
