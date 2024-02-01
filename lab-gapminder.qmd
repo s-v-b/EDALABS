@@ -203,18 +203,18 @@ gapminder <- gapminder::gapminder
 
 glimpse(gapminder)
 
-gapminder %>%  
+gapminder |>  
   glimpse()
 
-gapminder %>% 
+gapminder |> 
   head()
 ```
 
 Even an empty dataframe has a scheme:
 
 ```{r}
-gapminder %>% 
-  head(0) %>% 
+gapminder |> 
+  head(0) |> 
   glimpse()  
 glimpse(head(gapminder, 0))
 ```
@@ -236,8 +236,8 @@ have null content
 #| collapse: true
 #| echo: true
 #| 
-gapminder %>% 
-  filter(FALSE) %>% 
+gapminder |> 
+  filter(FALSE) |> 
   glimpse()
 ```
 
@@ -259,12 +259,12 @@ perform sampling within groups defined by the value of a column.
 ```{r}
 #| label: stratified_sampling
 #| results: markup
-gapminder %>% 
+gapminder |> 
   slice_sample(n=2, by=continent)
 
 #< or equivalently 
-gapminder %>% 
-  group_by(continent) %>% 
+gapminder |> 
+  group_by(continent) |> 
   slice_sample(n=2)
 ```
 
@@ -305,8 +305,8 @@ Extract/filter a subset of rows using `dplyr::filter(...)`
 ```{r}
 #| label: gapminder_td
 #| results: markup
-gapminder %>% 
-  filter(country=='France') %>% 
+gapminder |> 
+  filter(country=='France') |> 
   head()
 ```
 
@@ -382,7 +382,7 @@ Use `dplyr::filter()` to perform row filtering
 
 # filter(gapminder, year==2002)
 
-gapminder %>% 
+gapminder |> 
   filter(year==2002)
 ```
 
@@ -412,7 +412,7 @@ The ability to use data masking is one of the great strengths of the `R` program
 #| label: bad
 
 
-p <- gapminder_2002 %>%
+p <- gapminder_2002 |>
   ggplot() 
 ```
 
@@ -921,7 +921,7 @@ Use `plotly::ggplotly()`
 #| echo: fenced
 #| code-annotations: hover
 
-q <- filter(gapminder, FALSE) %>%
+q <- filter(gapminder, FALSE) |>
    ggplot() +
    aes(x = gdpPercap) +
    aes(y = lifeExp) +
@@ -942,7 +942,7 @@ q <- filter(gapminder, FALSE) %>%
        caption="From sick  and poor (bottom left) to healthy and rich (top right)")
 
 
-(q %+% gapminder) %>%
+(q %+% gapminder) |>
   plotly::ggplotly(height = 500, width=750)   
 ```
 1. `text` will be used while *hovering*
@@ -963,7 +963,7 @@ q <- filter(gapminder, FALSE) %>%
 
 (p %+% gapminder +
  facet_null() +
- aes(frame=year)) %>%
+ aes(frame=year)) |>
  plotly::ggplotly(height = 500, width=750)
 
 ```
