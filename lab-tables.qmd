@@ -35,7 +35,7 @@ engine: knitr
 
 ::: {#first-column}
 
-{{< meta title >>}}
+
 
 - **`r stringr::str_glue('{params$curriculum}')`**
 - **`r stringr::str_glue('[{params$university}](https://www.u-paris.fr)')`**

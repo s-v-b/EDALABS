@@ -14,11 +14,10 @@ execute:
 engine: knitr
 ---
 
+### {{< fa map-location-dot >}} Objectives
 
-### {{<  fa map-location-dot >}} Objectives
+### {{< fa database >}} Data
 
-### {{<  fa database >}} Data
-
-## {{<  fa graduation-cap >}} Grading criteria 
+## {{< fa graduation-cap >}} Grading criteria
 
 {{< include evaluation_guidelines.qmd >}}
