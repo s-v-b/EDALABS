@@ -432,7 +432,9 @@ The motivation and usage of diagnostic plots is explained in detail in the book 
 
 :::
 
-These diagnostic plots can be built from the information gathered in the `lm` object returned by `lm(...)`. It is convenient to extract the required pieces of information using method `augment.lm`. of generic function `augment()` from package `broom`. 
+These diagnostic plots can be built from the information gathered in the `lm` object returned by `lm(...)`. 
+
+{{< fa broom >}} It is convenient to extract the required pieces of information using method `augment.lm`. of *generic function* `augment()` from package `broom`. 
 
 
 ::: {.content-visible when-profile="solution"}
@@ -464,9 +466,9 @@ Recall that in the output of `augment()`
 - `.fitted`: $\widehat{Y} = H \times Y= X \times \widehat{\beta}$ 
 - `.resid`: $\widehat{\epsilon} = Y - \widehat{Y}$ residuals, $\sim (\text{Id}_n - H) \times \epsilon$ 
 - `.hat`: diagonal coefficients of Hat matrix $H$ 
-- `.sigma`:  
+- `.sigma`: is meant to be the estimated standard deviation of components of  $\widehat{Y}$
 
-Compute the share of explained variance 
+Compute the share of *explained variance* 
 
 ::: {.content-visible when-profile="solution"}
 
@@ -476,13 +478,16 @@ Compute the share of explained variance
 whiteside_aug %$% {
   1 - (var(.resid)/(var(Gas)))
 }
+
+# with(whiteside_aug,
+#   1 - (var(.resid)/(var(Gas)))
 ```
 
 :::
 
 :::
 
-Plot fitted against residuals
+Plot residuals against fitted values 
 
 ::: {.content-visible when-profile="solution"}
 
@@ -503,8 +508,6 @@ diag_1 <- whiteside_aug %>%
   geom_hline(yintercept = 0, linetype="dashed") +
   xlab("Fitted values") +
   ylab("Residuals)") +
-  # ggtitle(glue("{cur_dataset} data, regression Gas ~ Temp"),
-  #         subtitle = "") +
   labs(caption = "Residuals versus Fitted")
 ```
 
@@ -532,8 +535,6 @@ diag_3 <- whiteside_aug %>%
   xlab("Fitted values") +
   ylab("sqrt(|standardized residuals|)") +
   geom_point(aes(shape=Insul), size=1, alpha=1) +
-  # ggtitle(glue("{cur_dataset} dataset"),
-  #         subtitle = "") +
   labs(caption = "Scale location")
 ```
 
@@ -555,7 +556,6 @@ diag_2 <- whiteside_aug %>%
               linewidth=.5,
               color="black") +
   coord_fixed() +
-  # ggtitle(glue("{cur_dataset} dataset")) +
   labs(caption="Residuals qqplot") +
   xlab("Theoretical quantiles") +
   ylab("Empirical quantiles of standadrdized residuals")
@@ -844,7 +844,8 @@ sum((whiteside_aug1$.hat - diag(H))^2)
 :::
 
 
-Understanding `.sigma`: check the documentation 
+
+Understanding `.std.resid` 
 
 ::: {.content-visible when-profile="solution"}
 
@@ -856,16 +857,6 @@ sigma_hat <- sqrt(sum(lm1$residuals^2)/lm1$df.residual)
 lm1 %>% glance() 
 ```
 
-:::
-
-:::
-
-Understanding `.std.resid` 
-
-::: {.content-visible when-profile="solution"}
-
-::: {.callout-tip title="Solution"}
-
 $$
 \widehat{r}_i = \frac{\widehat{\epsilon}_i}{\widehat{\sigma} \sqrt{1 - H_{i,i}}}
 $$
@@ -875,9 +866,28 @@ $$
 sum((sigma_hat * sqrt(1 -whiteside_aug1$.hat) * whiteside_aug1$.std.resid - whiteside_aug1$.resid)^2)
 ```
 
-:::
 
 :::
 
+:::
+
+Understanding column `.sigma` 
+
+::: {.content-visible when-profile="solution"}
+
+::: {.callout-tip title="Solution"}
+
+
+Column `.sigma` contains the *leave-one-out* estimates of $\sigma$, that is `whiteside_aug1$.sigma[i]` is the estimate of $\sigma$ you obtain by leaving out the `i` row of the dataframe. 
+
+{{< fa wand-magic-sparkles >}} There is no need to recompute everything for each sample element.
+
+$$
+\widehat{\sigma}^2_{(i)} =  \widehat{\sigma}^2 \frac{n-p-1- \frac{\widehat{\epsilon}_i^2}{\widehat{\sigma}^2 {(1 - H_{i,i})}}\frac{}{}}{n-p-2}
+$$
+
+:::
+
+:::
 
 
