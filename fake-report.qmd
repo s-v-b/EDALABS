@@ -147,6 +147,7 @@ p
 
 
 ```{r}
+#| label: chunk-make-appendix
 #| ref.label: !expr knitr::all_labels(appendix==TRUE)
 #| echo: true
 #| eval: false

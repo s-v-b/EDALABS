@@ -2,6 +2,7 @@ format:
   html:
     highlight-style: zenburn
     code-fold: true
+    code-link: true
     code-annotations: hover
   pdf:
     highlight-style: arrow
@@ -30,6 +31,8 @@ execute:
   echo: true
   eval: true
   collapse: true
+  freeze: auto
+  cache: true
 
 callout-appearance: simple
 

@@ -1,0 +1,600 @@
+---
+date: "`r Sys.time()`"
+
+execute:
+  echo: true
+  eval: true
+  collapse: true
+
+
+format:
+  html:
+    output-file: lab-whiteside-anova.html
+  pdf:
+    output-file: lab-whiteside-anova.pdf
+
+params:
+  truc: html
+  year: 2023 
+  curriculum: "M1 MIDS & MFA"
+  university: "Université Paris Cité"
+  homepage: "https://stephane-v-boucheron.fr/courses/eda"
+  moodle: ""
+  
+engine: knitr
+standalone: true
+---
+
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+require(tidyverse)
+require(broom)
+require(tidymodels)
+require(DT)
+require(MASS)
+require(magrittr)
+
+
+whiteside <- MASS::whiteside
+
+old_options <- options(digits = 3,
+                       DT.options = list(digits=3, 
+                                         pageLength = 5, 
+                                         language = list(search = 'Filter:')))
+
+
+
+```
+
+```{r}
+theme_set(theme_minimal())
+```
+
+
+```{r}
+#| echo: false
+#| eval: true
+#| appendix: true
+#| label: respons_df
+respons_df <-  . %>% 
+  mutate(across(where(is.double), \(x) signif(x, digits=3))) %>% 
+  DT::datatable(extensions = "Responsive")
+```
+
+
+```{r}
+#| echo: false
+#| eval: true
+#| appendix: true
+eqf <- . %>% 
+  enframe() %>% 
+  mutate(Fn=rank(value, ties.method = "max")/n()) %>% 
+  distinct(value, Fn) %>%  
+  arrange(value) %$%
+  stepfun(x=Fn, y=c(value, max(value)), f=1, right=T)
+```
+
+```{r}
+#| echo: false
+#| eval: true
+#| appendix: false
+#
+#
+ecdf_before <- whiteside %$%
+  ecdf(Temp[Insul=="Before"])
+
+#
+#
+eqf_after  <- whiteside |> 
+  filter(Insul=="After") |> 
+  pull(Temp) |> 
+  eqf()
+```
+
+```{r}
+#| echo: false
+#| eval: true
+#| appendix: true
+#| label: myqqplot
+
+#
+#
+my_qq <- function(df, fac, lev, quanti) {
+
+ecdf_lev <- df |>
+  filter({{fac}}==lev) |>
+  pull({{quanti}})  |>
+  ecdf()
+  
+eqf_other  <-  df |>
+  filter({{fac}}!=lev) |>
+  pull({{quanti}})  |>
+  eqf()
+
+df |>
+  filter({{fac}}==lev) |>
+  ggplot() +
+  aes(x={{quanti}},
+      y=eqf_other(ecdf_lev({{quanti}}))) +
+  geom_point(fill="white",
+             color="black",
+             alpha=.5 ) +
+  geom_abline(intercept = 0,
+              slope=1,
+              linetype="dotted") +
+  coord_fixed() +
+  theme_minimal()
+}  
+```
+
+```{r}
+#| echo: false
+#| eval: true
+#| appendix: true
+
+
+#
+#
+parallel_boxplot <- function(df, fac, quant){
+  
+  df |> 
+    ggplot() +
+    aes(x={{fac}}, y={{quant}}) +
+    geom_boxplot(varwidth = T) +
+    theme_minimal()
+  
+}
+```
+
+::: {layout="[80,20]"}
+
+::: {#first-column}
+
+**Variable/Model selection and ANOVA  on Whiteside data**
+
+-   **`r stringr::str_glue('{params$curriculum}')`**
+-   **`r stringr::str_glue('[{params$university}](https://www.u-paris.fr)')`**
+-   `r stringr::str_glue("Année {params$year}-{params$year+1}")`
+-   `r stringr::str_glue("[Course Homepage]({params$homepage})")`\
+-   `r stringr::str_glue("[Moodle]({params$moodle})")`
+
+:::
+
+
+::: {#second-column}
+
+![](./IMG/UniversiteParis_monogramme_couleur_RVB.png){align="right" style="size:50px;" width="75"}
+
+:::
+
+:::
+
+
+
+## Challenge(s)
+
+```{r}
+#| echo: false
+#| eval: true
+#| appendix: false
+temp_label <- "Weekly average external temperature ⁰Celsius"
+gas_label <- "Week gas consumption 1000 cubic feet"
+```
+
+
+## Comparing weekly average temperatures over two seasons 
+
+```{r}
+lm_temp <- lm(Temp ~ Insul, whiteside)
+
+lm_temp |> 
+  tidy()
+```
+
+```{r}
+lm_temp |> 
+  glance()
+```
+
+Display parallel boxplots, overlayed cumulative distribution functions and a quantile-quantile plot (QQ-plot) to compare the temperature distributions  during the two heating seasons. Comment
+
+::::: {.content-visible when-profile="solution"}  
+
+
+```{r}
+whiteside |> 
+  ggplot() +
+  aes(x=Insul, y=Temp) +
+  geom_boxplot(varwidth = T,outlier.shape = 3) +
+  ylab(temp_label)
+```
+
+
+
+:::::
+
+::::: {.content-visible when-profile="solution"}  
+
+
+```{r}
+whiteside |> 
+  ggplot() +
+  aes(linetype=Insul, x=Temp) +
+  stat_ecdf() +
+  xlab(temp_label) +
+  ylab("Empirical Cumulative Distribution Function") +
+  ggtitle("Whiteside data: temperatures before and after insulation")
+```
+
+
+:::::
+
+
+
+::::: {.content-visible when-profile="solution"}  
+
+
+::: {layout="[50,50]"}
+
+::: {#first-column}
+
+```{r}
+#| echo: false
+#| appendix: false
+#| 
+with(whiteside,
+  qqplot(x=Temp[Insul=="Before"],
+         y=Temp[Insul=="After"])
+)
+```
+
+
+:::
+
+
+
+
+::: {#second-column}
+
+
+```{r}
+#| echo: false
+my_qq(whiteside, Insul, "Before", Temp)
+```
+
+:::
+
+:::
+
+:::::
+
+## Perform a Wilcoxon test to assess change of Temperature between the two seasons
+
+::::: {.content-visible when-profile="solution"}  
+
+
+```{r}
+#| caption: "Wilcoxon Rank Sum test"
+wilcox.test(formula= Temp ~ Insul, data=whiteside) |> 
+  tidy() |> 
+  knitr::kable()
+  # DT::datatable()
+```
+
+
+No smoking gun
+
+:::::
+
+# Does Insulation matter?
+
+- Does average Gas consumption change with Insulation?
+- Does Gas consumption dependence on Temperature change with Insulation?
+
+As we have to infer the *dependence on Temperature*, the questions turn tricky.
+
+## Compare Gas consumption before and after (leaving Temperature aside)
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+lm0_0 <- lm(Gas ~ Insul, whiteside)
+lm0_0 |> 
+  tidy()
+```
+
+
+
+```{r}
+parallel_boxplot(whiteside, Insul, Gas) + 
+  labs(title="Gas consumption distribution before and after Insulation")
+```
+
+
+:::::
+
+
+::::: {.content-visible when-profile="solution"}  
+
+
+```{r}
+my_qq(whiteside, Insul, "Before", Gas) +
+   xlab("Gas before") +
+   ylab("Gas after") +
+   labs(title = "QQ plot")
+
+```
+
+:::::
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+whiteside |> 
+  ggplot() +
+  aes(linetype=Insul, x=Gas) +
+  stat_ecdf() +
+  xlab(gas_label) +
+  ylab("Empirical Cumulative Distribution Function") +
+  ggtitle("Whiteside data: gas consumption before and after insulation")
+```
+
+
+:::::
+
+
+### Do Insulation and Temperature additively matter? 
+
+This consists in assessing whether the Intercept is modified after Insulation
+
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+lm0 <- lm(Gas ~ Insul + Temp, whiteside)
+
+lm0 |> 
+  tidy()
+```
+
+```{r}
+coeffs0 <- as.list(coefficients(lm0))
+
+whiteside |> 
+  ggplot()  +
+  aes(x=Temp, y=Gas) +
+  geom_point(aes(shape=Insul)) +
+  geom_abline(slope=coeffs0$Temp, intercept = coeffs0$`(Intercept)`, linetype="dotted") +
+  geom_abline(slope=coeffs0$Temp, intercept = coeffs0$`(Intercept)`+ coeffs0$InsulAfter, linetype="dashed") 
+  
+  
+```
+
+
+:::::   
+
+Draw the disgnostic plots for this model
+
+::::: {.content-visible when-profile="solution"}  
+
+
+
+:::::
+
+### Do Insulation and Temperature matter and interact? 
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+lm1 <- lm(Gas ~ Insul * Temp, whiteside)
+lm1 |> 
+  tidy()
+```
+
+:::::
+
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+coeffs1 <- as.list(coefficients(lm1))
+
+whiteside |> 
+  ggplot()  +
+  aes(x=Temp, y=Gas) +
+  geom_point(aes(shape=Insul)) +
+  geom_abline(slope=coeffs1$Temp, intercept = coeffs1$`(Intercept)`, linetype="dotted") +
+  geom_abline(slope=coeffs1$Temp + coeffs1$`InsulAfter:Temp`, 
+              intercept = coeffs1$`(Intercept)`+ coeffs1$InsulAfter, 
+              linetype="dashed") 
+
+```
+
+:::::
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+whiteside |> 
+  ggplot()  +
+  aes(x=Temp, y=Gas, group=Insul) +
+  geom_point(aes(shape=Insul)) +
+  geom_smooth(formula = 'y ~ x', 
+              data = filter(whiteside, Insul=="Before"), 
+              method="lm", se=F, 
+              linetype="dotted") + 
+  geom_smooth(formula = 'y ~ x', 
+              data = filter(whiteside, Insul=="After"), 
+              method="lm", se=F, 
+              linetype="dashed") 
+
+```
+
+:::::
+
+### Do Insulation and powers of temperature interact?
+
+Investigate formulae `Gas ~ poly(Temp, 2, raw=T)*Insul`, `Gas ~ poly(Temp, 2)*Insul`, 
+`Gas ~ (Temp +I(Temp*2))*Insul`, `Gas ~ (Temp +I(Temp*2))| Insul`
+
+
+::::: {.content-visible when-profile="solution"}  
+
+
+
+```{r}
+lm2 <- lm(Gas ~ poly(Temp, 2, raw=T)*Insul, whiteside)
+lm2 |> 
+  tidy()
+```
+
+```{r}
+lm2_a <- lm(Gas ~ poly(Temp, 2, raw=F)*Insul, whiteside)
+lm2_a |> 
+  tidy()
+```
+
+:::::
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+whiteside |> 
+  ggplot()  +
+  aes(x=Temp, y=Gas, group=Insul) +
+  geom_point(aes(shape=Insul)) +
+  geom_smooth(formula = 'y ~ x + I(x^2)', 
+              data = filter(whiteside, Insul=="Before"), 
+              method="lm", se=F, 
+              linetype="dotted") + 
+  geom_smooth(formula = 'y ~ x + I(x^2)', 
+              data = filter(whiteside, Insul=="After"), 
+              method="lm", se=F, 
+              linetype="dashed") 
+```
+
+:::::
+
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+lm3 <- lm(Gas ~ (Temp + I(Temp^2))*Insul, data = whiteside)
+```
+
+```{r}
+lm3 |> 
+  tidy()
+```
+
+:::::
+
+
+
+
+## Higher degree polynomials 
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+lm10 <- lm(Gas ~ poly(Temp, 10)*Insul, whiteside)
+lm10 |> 
+  broom::tidy() |> 
+  respons_df()
+```
+
+:::::
+
+
+## Drying model exploration
+
+### Collecting the models a posteriori
+
+Make a named list with the models constructed so far
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+#| eval: false
+lm_names <- ls()[str_starts(ls(), "lm")]
+
+lms <- lapply(as.list(lm_names), get)
+names(lms) <- lm_names
+```
+
+:::::
+
+
+# Use `stepAIC()` to perform stepwise exploration
+
+::::: {.content-visible when-profile="solution"}
+
+```{r}
+whi.stp <- stepAIC(lm2, scope = list( formula(lm0_0), formula(lm2)), trace=3)
+
+anova(whi.stp) |> 
+  broom::tidy() |> 
+  respons_df()
+```
+
+:::::
+
+# ANOVA table(s)
+
+Use fonction `anova()` to compare models constructed with
+formulae 
+
+```{r} 
+formula(lm0)
+``` 
+
+::::: {.content-visible when-profile="solution"}
+
+```{r}
+#| echo: false
+#| eval: true
+anova(lm0, lm3) |> 
+    broom::tidy() |> 
+    respons_df()
+```
+
+```{r}
+#| echo: false
+#| eval: true
+anova(lm0, lm2) |> 
+  broom::tidy() |> 
+  respons_df()
+```
+
+
+:::::
+
+
+
+# Wikipedia on Analysis of Variance
+
+
+```{r}
+#| eval: true 
+#| echo: false
+knitr::include_url("https://en.wikipedia.org/wiki/Analysis_of_variance")
+```
+
+
+::::: {.content-visible when-profile="solution"}  
+
+# Appendix 
+
+
+```{r}
+#| label: chunk-make-appendix
+#| ref.label: !expr knitr::all_labels(appendix==TRUE)
+#| echo: true
+#| eval: false
+#| code-fold: false
+```
+
+:::::

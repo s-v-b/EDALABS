@@ -32,6 +32,8 @@ require(tidyverse)
 require(patchwork)
 require(httr)
 require(glue)
+require(gssr)
+
 old_theme <- theme_set(theme_minimal())
 ```
 
@@ -892,7 +894,7 @@ The median and the IQR are considered as *robust* estimators of location and sca
 
 ## Boxplot of age with respect to sex
 
-The `boxplot` delivers a graphical 
+The `boxplot` delivers a graphical output starting from  the robust estimators (the quartiles) of location and scale. 
 
 
 ::::: {.content-visible when-profile="solution"}  

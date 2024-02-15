@@ -1,5 +1,16 @@
 project:
   title: "EDA_LABS"
   output-dir: _handout 
+  render:
+    - "lab-*.qmd"
+    - "!lab-lee-carter.qmd"
+    - "!lab-life-tables.qmd"
+    - "!lab-lin-reg.qmd"
+    - "!lab-paris-housing.qmd"
+    - "!lab-exercices-glm.qmd"
+    - "!lab-gapminder_oecd.qmd"
+    - "!lab-nycflights-pq.qmd"
+
+
 
 

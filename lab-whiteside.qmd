@@ -645,7 +645,8 @@ lm1 %>%
 ::: {.callout-tip title="Solution"}
 
 ```{r}
-
+lm0 |>
+  glance_lm()
 lm1 %>% 
   glance_lm()
 ```
@@ -659,7 +660,8 @@ lm1 %>%
 ::: {.callout-tip title="Solution"}
 
 ```{r}
-p + 
+p +
+  geom_smooth(formula='y ~ poly(x, 2)',linewidth=.5, color="black",linetype="dashed",  method="lm", se=FALSE)+
   aes(color=Insul) +
   geom_smooth(aes(linetype=Insul), 
               formula='y ~ x',linewidth=.5, color="black", method="lm", se=FALSE) +
