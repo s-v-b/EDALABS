@@ -76,7 +76,7 @@ old_theme <- theme_set(theme_minimal())
 
 :::
 
-## Install and use  package `gssr`
+### Install and use  package `gssr`
 
 ::: {layout="[30,70]"}
 
@@ -112,7 +112,7 @@ knitr::include_url("https://kjhealy.github.io/gssr/", height = 400)
 
 
 
-## Get data for year 2018
+### Get data for year 2018
 
 The GSS is carried out every two years. It offers both *cross-sectional* data and *panel* data.
 
@@ -122,7 +122,7 @@ Package `gssr` offers a simple way to retrieve yearly data.
 #| code-fold: false
 df_2018 <- gssr::gss_get_yr(2018)
 ```
-## Inspect the data 
+### Inspect the data 
 
 - How many observations?
 - How many variables?
@@ -136,7 +136,7 @@ dim(df_2018)
 
 :::::
 
-## Numerical summaries for `age` and `agekdbrn`
+### Numerical summaries for `age` and `agekdbrn`
 
 The `2018` data provide (among too many other things) columns named `age` abd `agekdbrn`.
 Get numerical summaries about these two columns.
@@ -160,7 +160,7 @@ Thanks to `gssr`, you can get meta-information about the columns
 ```
 
 
-## How is `sex` encoded? Is it worth recoding it? 
+### How is `sex` encoded? Is it worth recoding it? 
 
 ::::: {.content-visible when-profile="solution"}  
 
@@ -173,7 +173,7 @@ df_2018 |>
 
 :::
 
-## Histogram and density plots for `age` distribution/facet by `sex`
+### Histogram and density plots for `age` distribution/facet by `sex`
 
 ::::: {.content-visible when-profile="solution"}  
 
@@ -183,6 +183,11 @@ p_age <- df_2018 |>
   ggplot() +
   aes(x=age) +
   facet_wrap(~ sex, ) 
+
+q_age <- df_2018 |> 
+  mutate(sex=as_factor(sex)) |> 
+  ggplot() +
+  aes(x=age) 
 ```
 
 :::::
@@ -194,7 +199,7 @@ p_age +
   geom_histogram(aes(y=after_stat(density)),
                  fill="white", 
                  color="black",
-                 bins=72) +
+                 bins=20) +
   labs(
     title="GSS 2018",
     subtitle = "Age distribution of respondents"
@@ -204,6 +209,25 @@ p_age +
 - Play with number of bins
 - Spot the irregular behavior of the histograms
 - Something special at the right edge of both histograms
+
+
+```{r}
+enframe(x=runif(1000))  |> 
+  ggplot() +
+  aes(x=value) +
+  geom_histogram(bins=10)
+```
+```{r}
+q_age +
+  geom_histogram(aes(y=after_stat(density)),
+                 fill="white", 
+                 color="black",
+                 bins=70) +
+  labs(
+    title="GSS 2018",
+    subtitle = "Age distribution of respondents"
+  )
+```
 
 :::::
 
@@ -216,7 +240,7 @@ p_age +
                alpha=.5,
                color="black",
                bw = "SJ",
-               adjust = .25
+               adjust = 1
                )
 ```
 
@@ -225,7 +249,7 @@ p_age +
 
 :::::
 
-## Compare *sample* `age` distribution with *population* `age` distribution
+### Compare *sample* `age` distribution with *population* `age` distribution
 
  
 ::: {layout="[30,70]"}
@@ -255,7 +279,7 @@ knitr::include_url("https://perspective.usherbrooke.ca/bilan/servlet/BMPagePyram
 ::::: {.content-visible when-profile="solution"} 
 :::::
 
-## Parallel boxplots of `age` with respect to `sex`
+### Parallel boxplots of `age` with respect to `sex`
 
 ::::: {.content-visible when-profile="solution"}  
 
@@ -270,7 +294,7 @@ df_2018 |>
 
 :::::
 
-## QQplot comparing sample male and female age distributions
+### QQplot comparing sample male and female age distributions
 
 ::::: {.content-visible when-profile="solution"}  
 
@@ -280,7 +304,7 @@ with(df_2018,
 ```
 :::
 
-## Make your own qqplot
+### Make your own qqplot
 
 ::::: {.content-visible when-profile="solution"}  
 
@@ -345,7 +369,7 @@ gss_dict |>
 :::::
 
 
-## Scatterplot for `age` and `agekdbrn`, facet by `sex`   `
+### Scatterplot for `age` and `agekdbrn`, facet by `sex`   `
 
 ::::: {.content-visible when-profile="solution"}  
 
@@ -353,7 +377,7 @@ gss_dict |>
 
 :::::
 
-## Working with `gss_sub`
+### Working with `gss_sub`
 
 
 
@@ -391,7 +415,7 @@ gss_sub |>
 ```
 :::
 
-## Education through  generations
+### Education through  generations
 
 What kind of information do we get through variables `degree` and `padeg`?
 
@@ -400,7 +424,7 @@ What kind of information do we get through variables `degree` and `padeg`?
 ?padeg
 ```
 
-## Compute contingency table for `degree` and `padeg`
+### Compute contingency table for `degree` and `padeg`
 
 ::::: {.content-visible when-profile="solution"}  
 
@@ -418,7 +442,7 @@ tab_degree_padeg |>
 
 :::
 
-## Visualize contingency table for `degree` and `padeg`
+### Visualize contingency table for `degree` and `padeg`
 
 
 ::::: {.content-visible when-profile="solution"}  
@@ -431,7 +455,7 @@ tab_degree_padeg |>
 ```
 :::::
 
-## Rearrange the levels of `degree` and `padeg`
+### Rearrange the levels of `degree` and `padeg`
 
 
 
