@@ -1,0 +1,405 @@
+---
+date: "`r Sys.time()`"
+
+execute:
+  echo: true
+  eval: true
+  collapse: true
+
+format:
+  html:
+    output-file: lab-babynames.html
+  pdf:
+    output-file: lab-babynames.pdf
+
+params:
+  truc: html
+  year: 2023 
+  curriculum: "L3 MIASHS"
+  university: "Université Paris Cité"
+  homepage: "https://stephane-v-boucheron.fr/courses/scidon"
+  moodle: "https://moodle.u-paris.fr/course/view.php?id=13227"
+  
+engine: knitr
+---
+
+
+```{r}
+#| include: false
+#| message: false
+#| warning: false
+require(tidyverse)
+require(patchwork)
+require(httr)
+require(glue)
+require(ineq)
+require(here)
+require(skimr)
+
+old_theme <- theme_set(theme_minimal())
+```
+
+::: {layout="[80,20]"}
+
+::: {#first-column}
+
+
+
+- **`r stringr::str_glue('{params$curriculum}')`**
+- **`r stringr::str_glue('[{params$university}](https://www.u-paris.fr)')`**
+- `r stringr::str_glue("Année {params$year}-{params$year+1}")`
+- `r stringr::str_glue("[Course Homepage]({params$homepage})")`  
+- `r stringr::str_glue("[Moodle]({params$moodle})")`
+
+::: 
+
+::: {#second-column}
+![](./IMG/UniversiteParis_monogramme_couleur_RVB.png){align="right" style="size:50px;" width=75}
+:::
+
+:::
+
+
+# Naming babies 
+
+
+
+
+## French data
+
+The French data are built and made available by [INSEE](https://www.insee.fr/fr/accueil)  (French Governement Statistics Institute)
+
+- [https://www.insee.fr/fr/statistiques/fichier/2540004/nat2021_csv.zip](https://www.insee.fr/fr/statistiques/fichier/2540004/nat2021_csv.zip)
+
+This dataset has been growing for a while. It has been considered by social scientists for decades.  Given names are meant to give insights into a variety of phenomena, including religious observance.
+
+A glimpse at that body of work can be found in [_L'archipel français_ by Jérome Fourquet, Le Seuil, 2019 ](https://www.seuil.com/ouvrage/l-archipel-francais-jerome-fourquet/9782021406023)
+
+Read the [File documentation](https://www.insee.fr/fr/statistiques/2540004?sommaire=4767262#documentation)
+
+```{r}
+path_data <- 'DATA'
+fname <- 'nat2021_csv.zip'
+fpath <- here(path_data, fname)
+if (!file.exists(fpath)){
+  url <- "https://www.insee.fr/fr/statistiques/fichier/2540004/nat2021_csv.zip"
+  download.file(url, fpath)
+}   
+
+df_fr <- readr::read_csv2(fpath)
+
+df_fr |> glimpse()
+```
+
+## US data 
+
+US data may be gathered from 
+
+[Baby Names USA from 1910 to 2021 (SSA)](https://www.kaggle.com/datasets/donkea/ssa-names-1910-2021?resource=download)
+
+See [https://www.ssa.gov/oact/babynames/background.html](https://www.ssa.gov/oact/babynames/background.html)
+
+
+It can also be obtained by installing and loading the "babynames" package.
+
+
+Full baby name data provided by the SSA. This includes all names with at least 5 uses.
+
+
+```{r}
+if (!require("babynames")){
+  install.packages("babynames")
+  stopifnot(require("babynames"), "Couldn't install and load package 'babynames'")
+}
+```
+
+```{r}
+?babynames
+```
+
+##  Tidy the French data 
+
+Rename columns according to the next lookup table:
+
+```{r}
+lkp <- list(year="annais",
+  sex="sexe",
+  name="preusuel",
+  n="nombre")
+```
+
+```{r}
+df_fr <- df_fr |>
+  rename(!!!lkp) |>
+  mutate(country='fr') |>
+  mutate(sex=as_factor(sex)) |>
+  mutate(sex=fct_recode(sex, "M"="1", "F"="2")) |>
+  mutate(year=ifelse(year=="XXXX", NA, year)) |>
+  mutate(year=as.integer(year)) 
+  
+df_fr  |>
+  sample(5) |>
+  glimpse()
+```
+
+Download 'Naissances totales par sexe' from URL `https://www.ined.fr/fichier/s_rubrique/168/t35.fr.xls` from [INED](https://www.ined.fr/).
+
+```{r}
+births_fr_path <- here(path_data, 't35.fr.xls')
+births_fr_url <- 'https://www.ined.fr/fichier/s_rubrique/168/t35.fr.xls'
+
+if (!file.exists(births_fr_path)) {
+  download.file(births_fr_url, births_fr_path)
+}
+```
+```{r}
+births_fr <-  readxl::read_excel(births_fr_path, skip = 3)
+
+births_fr <- births_fr[-1, ] 
+
+
+births_fr |> 
+  glimpse()
+```
+
+```{r}
+names(births_fr)[1] <- "year"
+```
+
+```{r}
+births_fr <- births_fr |>
+  mutate(year=as.integer(year)) |>
+  drop_na()
+  
+
+births_fr |>
+  ggplot() +
+  aes(x=year, y=`Ensemble des nés vivants`) +
+  geom_col() +
+  labs(title="Births in France")
+```
+
+##  Tidy the American data
+
+
+```{r}
+babynames <- babynames |>
+  mutate(country='us') |>
+  mutate(sex=as_factor(sex))
+  
+babynames |>
+  glimpse()
+```
+
+
+
+```{r}
+births_us <- births
+
+births_us  |> 
+  ggplot() +
+  aes(x=year, y=births) +
+  geom_col() +
+  labs(title="Births in USA")
+```
+
+
+## Sex ratios 
+
+::: {.callout-note}
+
+### Question
+
+In dataset `df_fr` compute the total number of reported male and female births per year.
+Compute and plot the sex ratio. 
+
+:::
+
+
+::: {.content-visible   when-profile="solution"}
+
+```{r}
+df_accounted_births_fr <- df_fr |>
+  group_by(year, sex) |>
+  summarise(n=sum(n)) 
+  
+df_accounted_births_fr |>
+  glimpse()
+```
+
+```{r}
+df_accounted_births_fr |>
+  pivot_wider(id_cols=year, 
+              names_from=sex, 
+              values_from=`n`) |>
+  glimpse()
+```
+
+```{r}
+df_app_sex_ratio_fr <- df_accounted_births_fr |>
+  pivot_wider(id_cols=year, 
+              names_from=sex, 
+              values_from=`n`) |>
+  mutate(`Garçons vivants pour 100\nfilles vivantes\n apparent`=100*M/F)
+
+p_app_sex_ratio_fr <- df_app_sex_ratio_fr |>
+  ggplot() +
+  aes(x=year, y=`Garçons vivants pour 100\nfilles vivantes\n apparent`) +
+  geom_col() +
+  labs(
+    title="France: Apparent sex ratio",
+    subtitle="Dataset: 'nat2021_csv' (INSEE)"
+  )
+
+p_app_sex_ratio_fr
+```
+
+:::
+
+::: {.callout-note}
+
+### Question
+
+Compare with sex ratio as given  in dataset from INED
+
+:::
+
+::: {.content-visible   when-profile="solution"}
+
+```{r}
+p_sex_ratio_fr <- births_fr |>
+  ggplot() +
+  aes(x=year, y = `Garçons vivants pour 100\nfilles vivantes`) +
+  geom_col() +
+  labs(
+    title="France: sex ratio",
+    subtitle="Dataset INED")
+
+p_sex_ratio_fr
+```
+
+
+```{r}
+p_app_sex_ratio_fr + p_sex_ratio_fr 
+```
+
+```{r}
+df_app_sex_ratio_fr |>
+  inner_join(births_fr, by="year") |>
+  glimpse()
+```
+```{r}
+df_app_sex_ratio_fr |>
+  inner_join(births_fr, by="year") |>
+  ggplot() +
+  aes(x=year, y=`Garçons vivants pour 100\nfilles vivantes\n apparent`/`Garçons vivants pour 100\nfilles vivantes`) +
+  geom_point(size=.5) +
+  scale_y_log10() +
+  ylab('Ratio between apparent sex ratio and exact sex ratio') +
+  labs(
+    title="French data, confronting INSEE and INED data"
+  )
+```
+
+
+:::
+
+
+::: {.callout-note}
+
+### Question 
+
+Consider the fluctuations of the sex ratio through the years. 
+
+Are they consistent with the hypothesis: the sex of newborns are independently. identically distributed  with the probability of getting a girl equal to $.48$? 
+
+:::
+
+
+::: {.callout-note}
+
+### Question 
+
+Consider again the fluctuations of the sex ratio through the years. 
+
+Assume that for each year the sex of newborns are independently. identically distributed  with the probability of getting a girl depending on the year.
+
+Are the data consistent  with the hypothesis: the probability of getting a girl 
+remains constant thoughout the years? 
+
+:::
+
+
+# Picturing concentration of babynames distributions
+
+
+Every year, in each country, for both sex,  the name counts define a discrete probability distribution over the set of names (the universe).
+
+This distribution, just as an income or wealth distribution, is (usually) far from being uniform. We want to assess how uneven it is.
+
+We use the tools developed in econometrics.
+
+Without loss of generality, we assume that we handle a distribution over positive integers $1, \ldots, n$ where $n$ is the number of distinct names given during a year.
+
+We assume that frequencies $p_1, p_2, \ldots, p_n$ are given in ascending order, ties are broken arbitrarily.
+
+The `Lorenz function` ([Lorenz](https://en.wikipedia.org/wiki/Lorenz_curve) not `Lorentz`) maps $[0, 1] \to [0, 1]$.
+
+$$L(x) = \sum_{i=1}^{\lfloor nx \rfloor} p_i .$$
+
+Note that this is a piecewise constant function. 
+
+
+::: {.callout-note}
+
+### Question 
+
+Compute and plot the Lorenz function for a given `sex`, `year` and `country`
+
+:::
+
+::: {.content-visible when-profile="solution"}
+
+```{r}
+
+```
+
+:::
+
+::: {.callout-note}
+
+### Question
+
+Design an animated plot that shows the evolution of the Lorenz curve of babynames distribution through the years for a given sex and country.
+
+:::
+
+# Inequality indices 
+
+The Lorenz curve summarizes how far a discrete probability distribution is from the uniform distribution. This is a very rich summary and it is difficult to communicate this message to a wide audience. People tend to favor numerical indices (they don't really understand, but they get used to it): Gini, Atkinson, Theil, ...
+
+The [Gini index](https://en.wikipedia.org/wiki/Gini_coefficient) is twice the surface of the area comprised between curves $y=x$ and $y=L(x)$.
+
+$$G = 2 \times \int_0^1 (x -L(x)) \mathrm{d}x$$
+
+The next formula  allows us to compute it efficiently.
+
+$$G={\frac {2\sum _{i=1}^{n}i p_{i}}{n\sum _{i=1}^{n}p_{i}}}-{\frac {n+1}{n}}.$$
+
+
+::: {.callout-note}
+
+### Question
+
+Compute and plot Gini index of names distribution over time for sex and countries 
+
+:::
+
+::: {.content-visible when-profile="solution"}
+
+```{r}
+
+```
+
+:::
+
