@@ -1,0 +1,57 @@
+---
+date: "`r Sys.time()`"
+
+execute:
+  echo: true
+  eval: true
+  collapse: true
+
+format:
+  html:
+    output-file: lab-gss.html
+  pdf:
+    output-file: lab-gss.pdf
+
+params:
+  truc: html
+  year: 2023 
+  curriculum: "L3 MIASHS"
+  university: "Université Paris Cité"
+  homepage: "https://stephane-v-boucheron.fr/courses/scidon"
+  moodle: "https://moodle.u-paris.fr/course/view.php?id=13227"
+  
+engine: knitr
+---
+
+
+```{r}
+#| include: false
+#| message: false
+#| warning: false
+require(here)
+require(patchwork)
+require(glue)
+require(tidyverse)
+
+old_theme <- theme_set(theme_minimal())
+```
+
+::: {layout="[80,20]"}
+
+::: {#first-column}
+
+
+
+- **`r stringr::str_glue('{params$curriculum}')`**
+- **`r stringr::str_glue('[{params$university}](https://www.u-paris.fr)')`**
+- `r stringr::str_glue("Année {params$year}-{params$year+1}")`
+- `r stringr::str_glue("[Course Homepage]({params$homepage})")`  
+- `r stringr::str_glue("[Moodle]({params$moodle})")`
+
+::: 
+
+::: {#second-column}
+![](./IMG/UniversiteParis_monogramme_couleur_RVB.png){align="right" style="size:50px;" width=75}
+:::
+
+:::
