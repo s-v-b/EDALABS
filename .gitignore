@@ -50,6 +50,14 @@ rsconnect/
 
 /.quarto/
 
+/_freeze/
+/_handout/
+/_handout_solution/
+/*_files/
+/DATA/
+/IMG/
+
+
 # Tex 
 *.tex
 *.thm
@@ -57,4 +65,19 @@ rsconnect/
 *.xdv
 *.aux
 *.fdb_latexmk
+*.pdf
+*.html
+*.log
+*.blg
 
+# HTML
+*.html
+
+
+# fonts
+*.ttf
+fa-*
+*.woff2
+
+
+unnamed-chunk*

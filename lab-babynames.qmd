@@ -5,6 +5,8 @@ execute:
   echo: true
   eval: true
   collapse: true
+  message: false
+  warning: false
 
 format:
   html:
@@ -25,16 +27,17 @@ engine: knitr
 
 
 ```{r}
-#| include: false
+#| include: true
 #| message: false
 #| warning: false
-require(tidyverse)
 require(patchwork)
 require(httr)
 require(glue)
 require(ineq)
 require(here)
 require(skimr)
+require(magrittr)
+require(tidyverse)
 
 old_theme <- theme_set(theme_minimal())
 ```
@@ -130,10 +133,11 @@ lkp <- list(year="annais",
 
 ```{r}
 df_fr <- df_fr |>
-  rename(!!!lkp) |>
+  rename(!!!lkp) |>   # <1>
   mutate(country='fr') |>
   mutate(sex=as_factor(sex)) |>
   mutate(sex=fct_recode(sex, "M"="1", "F"="2")) |>
+  mutate(sex=fct_relevel(sex, "F", "M")) |> 
   mutate(year=ifelse(year=="XXXX", NA, year)) |>
   mutate(year=as.integer(year)) 
   
@@ -141,7 +145,8 @@ df_fr  |>
   sample(5) |>
   glimpse()
 ```
-
+1. `!!!` (bang-bang-bang) is offered by `rlang` package. Here, we use it to perform *list unpacking* (with the same intent and purposes we use dictionary unpacking in Python) 
+ 
 Download 'Naissances totales par sexe' from URL `https://www.ined.fr/fichier/s_rubrique/168/t35.fr.xls` from [INED](https://www.ined.fr/).
 
 ```{r}
@@ -161,6 +166,12 @@ births_fr <- births_fr[-1, ]
 births_fr |> 
   glimpse()
 ```
+
+::: {.callout-tip}
+
+If you have problems with the excel reader, feel free to download an equivalent `csv` file from [url](https://stephane-v-boucheron.fr/data/t35.fr.csv)
+
+:::
 
 ```{r}
 names(births_fr)[1] <- "year"
@@ -228,31 +239,31 @@ df_accounted_births_fr |>
 ```
 
 ```{r}
-df_accounted_births_fr |>
-  pivot_wider(id_cols=year, 
-              names_from=sex, 
-              values_from=`n`) |>
-  glimpse()
-```
-
-```{r}
 df_app_sex_ratio_fr <- df_accounted_births_fr |>
   pivot_wider(id_cols=year, 
               names_from=sex, 
               values_from=`n`) |>
-  mutate(`Garçons vivants pour 100\nfilles vivantes\n apparent`=100*M/F)
+  mutate(`Garçons vivants pour 100\nfilles vivantes`=100*M/F)
+              
+df_app_sex_ratio_fr |>
+  glimpse()
+```
 
+```{r}
 p_app_sex_ratio_fr <- df_app_sex_ratio_fr |>
   ggplot() +
-  aes(x=year, y=`Garçons vivants pour 100\nfilles vivantes\n apparent`) +
+  aes(x=year, y=`Garçons vivants pour 100\nfilles vivantes`) +
   geom_col() +
+  theme_minimal() # <1>
+  
+  
+p_app_sex_ratio_fr  +
   labs(
     title="France: Apparent sex ratio",
     subtitle="Dataset: 'nat2021_csv' (INSEE)"
-  )
-
-p_app_sex_ratio_fr
+  ) 
 ```
+1. Should not be necessary
 
 :::
 
@@ -267,20 +278,20 @@ Compare with sex ratio as given  in dataset from INED
 ::: {.content-visible   when-profile="solution"}
 
 ```{r}
-p_sex_ratio_fr <- births_fr |>
-  ggplot() +
-  aes(x=year, y = `Garçons vivants pour 100\nfilles vivantes`) +
-  geom_col() +
-  labs(
-    title="France: sex ratio",
-    subtitle="Dataset INED")
+p_sex_ratio_fr <- p_app_sex_ratio_fr %+% 
+  births_fr 
 
-p_sex_ratio_fr
+p_sex_ratio_fr + labs(
+    title="France: sex ratio",
+    subtitle="Dataset INED") 
 ```
 
-
 ```{r}
-p_app_sex_ratio_fr + p_sex_ratio_fr 
+(p_app_sex_ratio_fr + p_sex_ratio_fr) +
+  plot_annotation(
+    title="Evolution of sex ratio  at birth in France",
+    subtitle="Left: INSEE data. Right: INED data"
+  )
 ```
 
 ```{r}
@@ -292,15 +303,14 @@ df_app_sex_ratio_fr |>
 df_app_sex_ratio_fr |>
   inner_join(births_fr, by="year") |>
   ggplot() +
-  aes(x=year, y=`Garçons vivants pour 100\nfilles vivantes\n apparent`/`Garçons vivants pour 100\nfilles vivantes`) +
+  aes(x=year, y=`Garçons vivants pour 100\nfilles vivantes.x`/`Garçons vivants pour 100\nfilles vivantes.y`) +
   geom_point(size=.5) +
   scale_y_log10() +
-  ylab('Ratio between apparent sex ratio and exact sex ratio') +
+  ylab('Ratio between apparent sex ratio and\n exact sex ratio') +
   labs(
     title="French data, confronting INSEE and INED data"
   )
 ```
-
 
 :::
 
@@ -361,16 +371,98 @@ Compute and plot the Lorenz function for a given `sex`, `year` and `country`
 ::: {.content-visible when-profile="solution"}
 
 ```{r}
+make_lorenz_df <- function(df) {  
+  df |>
+  group_by(year, sex) |>
+  arrange(n) |>
+  mutate(rr=row_number()/n(), L=cumsum(n)/sum(n),  p=n/sum(n)) |>  # <1>
+  ungroup()
+}
+```
+1. The three expressions defining `rr`, `L` and `p` act as window functions. The window is defined by partitioning by `year, sex` and ordering by `n`. In SQL parlance: `WINDOW w AS (PARTITION BY year, sex ORDER BY n)`
 
+```{r}
+df_lorenz_fr <- df_fr |> 
+  filter(name != '_PRENOMS_RARES' &  !is.na(year)) |>
+  make_lorenz_df()
+
+df_lorenz_us <- babynames |> 
+  make_lorenz_df()
+```
+
+
+```{r}
+plot_lorenz <- function(df, ze_year=2020, ze_country='fr'){
+  df |>
+  filter(year==ze_year) |>
+  ggplot() +
+    aes(x=rr, y=L, linetype=sex) +
+    geom_line()  +
+    coord_fixed() +
+    xlab("") +
+    ylab("") +
+    geom_abline(intercept=0, slope=1, linetype="dotted") +
+    labs(title="Lorenz curve for babynames distribution",
+         subtitle=glue("Year: {ze_year}"),
+         caption=glue("Country: {ze_country}")
+    )
+} 
+```
+
+```{r}
+plot_lorenz(df_lorenz_fr, 2010, 'France') |
+plot_lorenz(df_lorenz_us, 2010, 'USA') 
+```
+
+```{r}
+plot_lorenz(df_lorenz_fr, 1910, 'France') |
+plot_lorenz(df_lorenz_us, 1910, 'USA')  
 ```
 
 :::
+
 
 ::: {.callout-note}
 
 ### Question
 
 Design an animated plot that shows the evolution of the Lorenz curve of babynames distribution through the years for a given sex and country.
+
+:::
+
+
+::: {.content-visible when-profile="solution"}
+
+```{r}
+p_inter <- filter(df_lorenz_fr, 
+                  year %% 5 ==0, 
+                  floor(rr*100)%% 5==0) |>
+  ggplot() +
+    aes(x=rr, y=L, linetype=sex, frame=year) +
+    geom_line()  +
+    coord_fixed() +
+    xlab("") +
+    ylab("") +
+    geom_abline(intercept=0, slope=1, linetype="dotted") 
+
+(p_inter + 
+    labs(title="Lorenz curve for babynames distribution",
+         caption=glue("Country: France")
+    )) |> plotly::ggplotly()
+```
+
+
+```{r}
+(
+  p_inter %+% 
+    filter(df_lorenz_us,
+           year %% 5 ==0, 
+           floor(rr*100)%% 5==0)  +
+    labs(title="Lorenz curve for babynames distribution",
+         caption=glue("Country: US"))
+) |> plotly::ggplotly()
+```
+
 
 :::
 
@@ -398,8 +490,359 @@ Compute and plot Gini index of names distribution over time for sex and countrie
 ::: {.content-visible when-profile="solution"}
 
 ```{r}
+p_gini <- df_lorenz_fr |>
+  group_by(year, sex) |>
+  summarize(gini=2 * sum(rr*p) - 1 - 1/n()) |>
+  ggplot() +
+  aes(x=year, y=gini, linetype=sex) +
+  geom_line() +
+  theme(legend.position="none") +
+  ylab("Gini index") 
+
+for(y in c(1914, 1918, 1938, 1945, 1958, 1969)) {
+  p_gini <- p_gini + 
+    geom_vline(xintercept = y, linetype="dotted") 
+}  
+
+p_gini_fr <- p_gini +
+  labs(subtitle="Country: France")
+```
+
+
+```{r}
+p_gini_us <- (
+  p_gini %+% 
+    (df_lorenz_us |>
+     group_by(year, sex) |>
+     summarize(gini=2 * sum(rr*p) - 1 - 1/n(), .groups="drop")) +  
+     labs(
+      subtitle="Country: US"
+  )
+)
+```
+
+```{r}
+(p_gini_fr| p_gini_us) +
+  plot_annotation(
+    title="Gini index of names distributions",
+    subtitle="..."
+)
+  
+```
+
+
+```{r}
+ 
+
+giniplot <- function (df) {
+  df |>
+  filter(name != '_PRENOMS_RARES' &  !is.na(year)) |>
+  group_by(year, sex) |>
+  mutate(gini=ineq::ineq(n)) |>
+  ggplot() +
+  aes(x=year, y=gini, linetype=sex) +
+  geom_line() +
+  theme(legend.position = "none")
+}
+
+p1 <- giniplot(filter(df_fr, year> 1947))
+p2 <- giniplot(filter(babynames, year>1947))
+
+
+( p1 | p2 ) +
+  plot_annotation(
+    title = "Evolution of Gini coeffcients of babynames distribution",
+    subtitle="France (left), USA (right) \n plain: girls  dotted: boys"
+  )
+```
+
+
+:::
+
+# `PRENOMS RARES` in France 
+
+::: {.callout-note}
+
+### Question 
+
+For each sex, Plot the proportion of  births given `_PRENOMS_RARES` as a function of year.
+
+:::
+
+::: {.content-visible when-profile="solution"}
+
+```{r}
+df_fr |>
+  filter(!is.na(year)) |>
+  group_by(year, sex) |>
+  mutate(total=sum(n)) |>    # <1>
+  filter(name=='_PRENOMS_RARES') |>
+  select(-name) |>
+  mutate(share= 100*n/total) |>
+  ungroup() |> 
+  ggplot() +
+    aes(x=year, y=share, color=sex, linetype=sex) +
+    geom_line() +
+    labs(
+      title="Share of rare names",
+      subtitle="French data (INSEE)"
+    ) +
+  theme_minimal()   # <2> 
+```
+1. Here `sum()` works as a window function over partition by `year, sex`. 
+2. This should not be necessary. Inconsistency in quarto ?
+
+
+
+```{r}
 
 ```
+:::
+
+::: {.callout-note}
+
+### Look for `Mary` in US Data
+
+:::
+
+# Marie, Jeanne and France in France
+
+::: {.callout-note}
+
+### Question
+
+Plot the proportion of female births given name 'MARIE' or 'MARIE-...' as a fucntion of year. Proceed in such a way that the reader can see the share of compounded names. We are expecting an _area plot_
+ 
+:::
+
+
+::: {.callout-tip}
+
+Have a look at [r-graph-gallery: stacked area](https://www.r-graph-gallery.com/stacked-area-graph.html)  and at [ggplot documentation](https://ggplot2.tidyverse.org/reference/geom_ribbon.html). Pay attention on the way you stack the area corresponding to names matching pattern 'MARIE-.*' over or under the are corresponding to babies named 'MARIE'
+
+:::
+
+::: {.content-visible when-profile="solution"}
+
+```{r}
+#| eval: true
+share_name  <- function(data, .name_stem='MARIE', .sex='F'){
+  data %>%
+  dplyr::filter(sex==.sex, !is.na(year)) %>%
+  select(-sex) %>% 
+  group_by(year) %>%
+  summarize(strict=sum(ifelse(name==.name_stem, n, 0)),
+            loose=sum(ifelse(stringr::str_starts(name, glue('{.name_stem}-')), n, 0)),
+            total=sum(n)) %>% 
+  transmute(year=year,
+            strict=strict/total, 
+            loose=loose/total) %>%
+  pivot_longer(strict:loose,
+               names_to=c("set"),
+               values_to="share") %>% 
+  mutate(set=factor(set, 
+                    levels=c("loose", "strict"), 
+                    ordered=TRUE)) 
+}  
+```
+
+
+```{r}
+#| eval: true
+p_marie <-  df_fr %>% 
+  share_name(.name_stem = "MARIE", .sex = "F") %T>%  # <1>
+  {maxshare <<- max(pluck(., "share") , na.rm=T)} %>% # <2>
+  ggplot(aes(x=year)) +
+    geom_area(aes(y=share, 
+                  fill=set),
+              position="stack") +
+    ylab("share") +
+    annotate('text', 
+            label="1st WW", 
+            x = 1916, 
+            y=0.1*maxshare) + 
+    annotate('text',  
+             label="2nd WW", 
+             x = 1942, 
+             y=0.1*maxshare) + 
+    annotate("text", 
+             label= "1969", 
+             x= 1968, 
+             y= 0.5*maxshare) 
+
+for(y in c(1914, 1918, 1938, 1945, 1958, 1969)) {
+  p_marie <- p_marie + 
+    geom_vline(xintercept = y, linetype="dotted") 
+}  
+
+p_marie +
+    ggtitle("MARIE") +
+    theme_minimal() + # <3>
+    theme(legend.position = "")
+
+```
+1. `%T>%` Tee-pipe offered by `magrittr`: The tee pipe works like `%>%`, except the return value is lhs itself, and not the result of rhs function/expression.
+2. `<<-` is the *scoping assignment*. Here it makes `maxshare` avalaible in the calling environment of calls to `annotate()`
+3. This should not be necessary. Inconsistency in quarto ?
+
+
+See Graphique 3, page 48, de _L'archipel français_  de J. Fourquet. Le Seuil. Essais. Vol. 898. 
+
+
+See [Relative coordinates or NPC in ggplot2](https://www.christophenicault.com/post/npc_ggplot2/)
+
+[tee pipe in magrittr documentation](https://magrittr.tidyverse.org/reference/tee.html#:~:text=Pipe%20a%20value%20forward%20into,effect%2C%20say%20plotting%20or%20printing.)
+
+[scoping assignment in ]()
+
+:::
+
+::: {.callout-note}
+
+### Question
+
+Answer the same question for JEANNE and FRANCE
+
+:::
+
+::: {.content-visible when-profile="solution"}
+
+```{r}
+#| eval: true
+p_jeanne <- p_marie %+% (  
+  share_name(df_fr, .name_stem = "JEANNE") %T>% 
+  {maxshare <<- max(pluck(., "share") , na.rm=T)}
+  ) + 
+  ggtitle("JEANNE")
+```
+
+```{r}
+#| eval: true
+p_france <- p_marie %+% (  
+  share_name(df_fr, .name_stem = "FRANCE") %T>% 
+  {maxshare <<- max(pluck(., "share") , na.rm=T)}) + 
+  ggtitle("FRANCE")
+```
+
+```{r}
+#| eval: true
+patchw <- p_jeanne / p_france 
+
+patchw + plot_annotation(
+  title="Decline of classic names",
+  subtitle="..."
+)
+```
+
+
+
+:::
+
+# Patterns of popularity 
+
+::: {.callout-note}
+
+### Question 
+
+Plot the popularities of `KEVIN`, `ENZO`,  `STÉPHANE` as  a function of `year`. 
+
+:::
+
+
+::: {.content-visible when-profile="solution"}
+
+```{r some-popularities}
+df_accounted_births_fr <- rename(df_accounted_births_fr, total=n)
+```
+
+```{r}
+prenoms <- c("STÉPHANE", "KEVIN", "ENZO")
+
+df_fr |>
+  filter(year>1947) |>
+  filter(name %in% prenoms, sex=="M") %>% 
+  inner_join(df_accounted_births_fr, by=c("year", "sex")) %>% 
+  ggplot() +
+  aes(x=year, y=n/total, linetype=name) +
+  geom_line() +
+  scale_y_log10() +
+  ggtitle(glue("Popularities"))
+```
+
+:::
+
+::: {.callout-note}
+
+### Question
+
+Plot the popularities of  "JEAN", "LUC", "MATHIEU", "MARC", "PAUL", "PIERRE", "JOSEPH", "FRANÇOIS" as  a function of `year`. Use stacked area style  plot.
+
+:::
+
+
+::: {.content-visible when-profile="solution"}
+
+```{r}
+prenoms <- c("JEAN", "LUC", "MATHIEU", "MARC", "PAUL", "PIERRE", "JOSEPH", "FRANÇOIS")
+
+df_fr %>% 
+  filter(year>1947) |>
+  filter(name %in% prenoms, sex=="M") %>% 
+  mutate(name= as_factor(name)) %>% 
+  mutate(name= fct_rev(name)) %>% 
+  inner_join(df_accounted_births_fr, by=c("year", "sex")) %>% 
+  ggplot() +
+  aes(x=year, y=n/total, linetype=name, fill=name) +
+  scale_fill_viridis_d() +
+  geom_area(position = "stack") +
+#  scale_y_log10() +
+  ggtitle(glue("Popularities of Boy Names"))
+```
+
+:::
+
+::: {.callout-note}
+
+### Question
+
+Plot the popularities of  "JEAN", "LUC", "MATHIEU", "MARC", "PAUL", "PIERRE", "JOSEPH", "FRANÇOIS" as  a function of `year`. Use line  plot.
+
+
+:::
+
+
+::: {.content-visible when-profile="solution"}
+
+```{r}
+df_fr %>% 
+  filter(year > 1947) |>
+  filter(name %in% prenoms, sex=="M") %>% 
+  inner_join(df_accounted_births_fr, by=c("year", "sex")) %>% 
+  ggplot() +
+  aes(x=year, y=n/total, linetype=name, colour=name) +
+  geom_line() +
+  scale_y_log10() +
+  ggtitle(glue("Popularities"))
+```
+
+
+:::
+
+::: {.callout-note}
+
+### Question
+
+Look for the translation of these names in US Data
+
+:::
+
+
+::: {.content-visible when-profile="solution"}
+
+The variations of popularity  exhibit different patterns
+
+- Some names declined steadily after second world war. 
+- Other names started from a very low popularity and enjoyed a rapid increase in popularity over one or two decades. Afterwards, these names rapidly lost  the public favor and returned to obscurity. 
 
 :::
 
