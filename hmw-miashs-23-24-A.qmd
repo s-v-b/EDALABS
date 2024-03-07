@@ -59,7 +59,96 @@ old_theme <- theme_set(theme_minimal())
 
 # Objectifs
 
-# 
+# Concentration de la distribution des prénoms dans le temps et l'espace
+
+## Mesure de l'inégalité et de la diversité
+
+Les mesures de l'inégalité d'une distribution ont été élaborées pour étudier des questions posées en:
+
+- Économie (distribution des revenus, des patrimoines, politiques de redistribution, ...)
+- Biodiversité  (distribution des espèces vivant sur un territoire, ...)
+- Politique,
+- ...
+
+Le package `R` nommé `ineq` met à disposition un certain nombre de concepts élaborés depuis plus d'un siècle. 
+
+On peut aussi utiliser ces mesures de l'inégalité/de la concentration pour étudier la distribution des prénoms donnés chaque année dans une société (un pays, une région, ...)
+
+Schématiquement, une distribution sur une population de $n$ individus, est un vecteur de longueur $n$ à coefficients positifs, que l'on notera $x$. Dans le cas qui nous intéresse, si $n$ prénoms distincts ont été utilisés durant une année, $x_i$ sera le nombre de fois où le prénom $i$ aura été attribué dans l'année, $x_i / \Big(\sum_{j=1}^n x_j\Big)$, représentera la part des nouveaux-nés ayant reçu le prénom $i$. 
+
+Quand on s'intéresse au caractère plus ou moins inégalitaire d'une distribution, l'important n'est pas qui reçoit quoi, mais quelle quantité reçoivent les mieux lotis ou les moins bien lotis. Si une distribution $y$ sur les $n$ prénoms  peut être obtenue à partir de $x$ en échangeant les rôles de quelques prénoms (par exemple en renommant les `Pierre`  en `Paul` et vice versa), $y$ est ni  plus ni moins inégalitaire que $x$. Une bonne mesure de l'inégalité des distributions doit être *invariante par permutation*. 
+
+Dans la suite, on suppose les vecteurs représentants les permutations triés par ordre croissant. Si $x$ et $y$ représentent deux distrubutions sur $n$ individus (prénoms pour nous). On dira que $x ≼ y$ ($y$ majore $x$) si pour tout $i\leq n$ 
+$$\frac{\sum_{j\leq i} x_j}{\sum_{j\leq n}   x_j} \geq  \frac{\sum_{j\leq i} y_j}{\sum_{j\leq n} y_j}$$
+autrement dit si pour tout $i\leq n$, la part de richesse allouée au $i$ moins bien lotis dans $x$ est plus grande que dans $y$. 
+
+Deux distributions de richesse sur un même ensemble ne sont pas toujours comparables au sens de l'ordre $\preceq$: il se peut que l'on n'ait ni $x \preceq y$, ni $y \preceq x$. Il s'agit d'un  *ordre partiel*.
+
+La courbe de Lorenz $L_x$ d'un vecteur $x$ est définie par 
+$$L_x(i/n) = \frac{\sum_{j\leq i} x_j}{\sum_{j\leq n}   x_j}\qquad \text{pour }1\leq i\leq n$$
+et 
+$$L_x(t) = L_x(i/n) \qquad \text{pour } \frac{i-1}{n}< t\leq \frac{i}{n}$$
+
+Dessiner les courbes de Lorenz des vecteurs $x$ et $y$ permet de visualiser la relation $\preceq$ : si $x \preceq y$ alors $L_x(t) \geq L_y(t)$ pour tout $t \in ]0,1[$.    
+
+Les courbes de Lorenz étant des fonctions de $]0,1[$ dans $[0,1]$, on peut superposer sur un même graphique des courbes de Lorenz définies par des vecteurs de longueur différentes. 
+Pour nous, cela permet de comparer les distributions de prénoms des deux sexes dans 
+un même pays durant une même année, de comparer des années différentes, *etc*.
+
+
+1. Si $\phi$ doit être utilisée comme une mesure, un indice d'inégalité alors
+$$x \preceq y \Longrightarrow  \phi(x) \leq \phi(y)$$
+soit $\phi$ est *Schur-convexe*.
+
+1. $\phi(ax) = \phi(x)$ (pour $a>0$) (invariance par changement d'échelle)
+
+2. L'extremum est atteint lorsque toutes les composantes de $x$ sont égales.
+
+Sources: Section F. de  *Measuring Inequality and Diversity* dans *Inequalities: Theory of Majorization and its Applications* Marshall et Olkin. Springer-Verlag.
+
+- Mesure de Simpson
+- 
+::: {.callout-note}
+
+### Question
+
+Calculer ppur chaque année, sexe et pays les indicateurs suivant de la dispersion de la distribution  des prénoms
+
+- Entropie
+- Entropie de Rényi
+- indice de Gini (vue en cours)
+- Simpson (mesure de diversité)
+- Majorité minimale (Alker)
+- Part du dernier décile/percentile
+- indice d'Atkinson
+
+
+:::
+
+
+
+::: {.content-visible when-profile="solution"}
+
+Réarrangements décroissants en analyse fonctionnelle
+
+:::
+
+## Ajustement à une loi de Zipf
+
+
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+
+```
+
+:::::
+
+
+## Profils de popularité
+
+
 
 
 # Bareme
