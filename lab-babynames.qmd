@@ -594,9 +594,6 @@ df_fr |>
 
 
 
-```{r}
-
-```
 :::
 
 ::: {.callout-note}
@@ -626,6 +623,9 @@ Have a look at [r-graph-gallery: stacked area](https://www.r-graph-gallery.com/s
 
 ```{r}
 #| eval: true
+
+theme_set(theme_minimal())
+
 share_name  <- function(data, .name_stem='MARIE', .sex='F'){
   data %>%
   dplyr::filter(sex==.sex, !is.na(year)) %>%
@@ -648,7 +648,8 @@ share_name  <- function(data, .name_stem='MARIE', .sex='F'){
 
 
 ```{r}
-#| eval: true
+#| eval: false
+#| echo: false
 p_marie <-  df_fr %>% 
   share_name(.name_stem = "MARIE", .sex = "F") %T>%  # <1>
   {maxshare <<- max(pluck(., "share") , na.rm=T)} %>% # <2>
@@ -681,19 +682,44 @@ p_marie +
     theme(legend.position = "")
 
 ```
-1. `%T>%` Tee-pipe offered by `magrittr`: The tee pipe works like `%>%`, except the return value is lhs itself, and not the result of rhs function/expression.
-2. `<<-` is the *scoping assignment*. Here it makes `maxshare` avalaible in the calling environment of calls to `annotate()`
-3. This should not be necessary. Inconsistency in quarto ?
 
+```{r}
+decline_and_fall <- function(df, .name_stem = "MARIE", .sex = "F"){
+
+  df <- share_name(df, .name_stem, .sex) 
+  maxshare <- max(pull(df, share), na.rm = T)
+
+  p <- df |> 
+    ggplot(aes(x=year)) +
+    geom_area(aes(y=share, 
+                  fill=set),
+              position="stack") +
+    ylab("share") +
+    annotate('text', 
+            label="1st WW", 
+            x = 1916, 
+            y=0.1*maxshare) + 
+    annotate('text',  
+             label="2nd WW", 
+             x = 1942, 
+             y=0.1*maxshare) + 
+    annotate("text", 
+             label= "1969", 
+             x= 1968, 
+             y= 0.5*maxshare) +
+    theme_minimal()
+
+  for(y in c(1914, 1918, 1938, 1945, 1958, 1969)) {
+    p <- p + geom_vline(xintercept = y, linetype="dotted") 
+  }
+  p
+}
+
+decline_and_fall(df_fr, .name_stem = "MARIE", .sex="F")
+```
 
 See Graphique 3, page 48, de _L'archipel français_  de J. Fourquet. Le Seuil. Essais. Vol. 898. 
 
-
-See [Relative coordinates or NPC in ggplot2](https://www.christophenicault.com/post/npc_ggplot2/)
-
-[tee pipe in magrittr documentation](https://magrittr.tidyverse.org/reference/tee.html#:~:text=Pipe%20a%20value%20forward%20into,effect%2C%20say%20plotting%20or%20printing.)
-
-[scoping assignment in ]()
 
 :::
 
@@ -709,19 +735,15 @@ Answer the same question for JEANNE and FRANCE
 
 ```{r}
 #| eval: true
-p_jeanne <- p_marie %+% (  
-  share_name(df_fr, .name_stem = "JEANNE") %T>% 
-  {maxshare <<- max(pluck(., "share") , na.rm=T)}
-  ) + 
-  ggtitle("JEANNE")
+p_jeanne <- decline_and_fall(df_fr, "JEANNE")
+# p_jeanne
 ```
 
 ```{r}
 #| eval: true
-p_france <- p_marie %+% (  
-  share_name(df_fr, .name_stem = "FRANCE") %T>% 
-  {maxshare <<- max(pluck(., "share") , na.rm=T)}) + 
-  ggtitle("FRANCE")
+p_france <- decline_and_fall(df_fr, "FRANCE")
+
+# p_france 
 ```
 
 ```{r}
@@ -730,7 +752,7 @@ patchw <- p_jeanne / p_france
 
 patchw + plot_annotation(
   title="Decline of classic names",
-  subtitle="..."
+  subtitle="Jeanne and France"
 )
 ```
 
@@ -770,6 +792,30 @@ df_fr |>
 ```
 
 :::
+
+
+::::: {.content-visible when-profile="solution"}  
+
+We can investigate surges of popularity for female English names in the 
+way we did for male French names.
+
+```{r}
+hypenames <- c('Jessica', 'Jennifer', 'Dana', 'Monica', 'Laura')
+
+(babynames %>% 
+  filter(year > 1947) |> 
+  filter(name %in% hypenames, sex=='F') %>% 
+  inner_join(babynames::births, by=c("year")) %>% 
+  ggplot() +
+  aes(x=year, y=2*n/births, linetype=name, colour=name) +
+  geom_line() +
+  scale_y_log10() +
+  ggtitle(glue("Popularities"))) |> 
+    plotly::ggplotly()
+```
+
+:::::
+
 
 ::: {.callout-note}
 
@@ -814,7 +860,10 @@ Plot the popularities of  "JEAN", "LUC", "MATHIEU", "MARC", "PAUL", "PIERRE", "J
 ::: {.content-visible when-profile="solution"}
 
 ```{r}
-df_fr %>% 
+#| include: true
+#| message: false
+#| warning: false
+q <- (df_fr %>% 
   filter(year > 1947) |>
   filter(name %in% prenoms, sex=="M") %>% 
   inner_join(df_accounted_births_fr, by=c("year", "sex")) %>% 
@@ -822,7 +871,10 @@ df_fr %>%
   aes(x=year, y=n/total, linetype=name, colour=name) +
   geom_line() +
   scale_y_log10() +
-  ggtitle(glue("Popularities"))
+  ggtitle(glue("Popularities"))) |> 
+    plotly::ggplotly()
+
+q 
 ```
 
 
@@ -839,10 +891,30 @@ Look for the translation of these names in US Data
 
 ::: {.content-visible when-profile="solution"}
 
+
+```{r}
+firstnames <- str_to_title(c("JOHN", "LUKE", "MATTHEW", "MARK", "PAUL", "PETER", "JOSEPH", "FRANCIS"))
+
+(babynames %>% 
+  filter(year > 1947) |> 
+  filter(name %in% firstnames, sex=='M') %>% 
+  inner_join(babynames::births, by=c("year")) %>% 
+  ggplot() +
+  aes(x=year, y=2*n/births, linetype=name, colour=name) +
+  geom_line() +
+  scale_y_log10() +
+  ggtitle(glue("Popularities"))) |> 
+    plotly::ggplotly()
+```
+
 The variations of popularity  exhibit different patterns
 
 - Some names declined steadily after second world war. 
 - Other names started from a very low popularity and enjoyed a rapid increase in popularity over one or two decades. Afterwards, these names rapidly lost  the public favor and returned to obscurity. 
 
 :::
+
+
+
+
 
