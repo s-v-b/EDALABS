@@ -916,5 +916,182 @@ The variations of popularity  exhibit different patterns
 
 
 
+## Grouping names by patterns of popularity
 
 
+::: {.content-visible when-profile="solution"}
+
+
+```{r}
+bind_rows(df_lorenz_fr, df_lorenz_us) |> 
+  filter(year> 1947, name != '_PRENOMS_RARES') |> 
+  group_by(country, year, sex) |> 
+  summarise(shannon=sum(p*log2(p)),
+            gini=ineq(p, na.rm = T),
+            atkinson=ineq(p, type="Atkinson", na.rm = T),
+            theil=ineq(p, type="Theil", na.rm = T),
+            entropy= ineq(p, type="entropy", na.rm = T),
+            rs=ineq(p, type="RS", na.rm = T),
+            .groups = "drop") |> 
+  pivot_longer(cols=-c(country,year,sex),
+               names_to = "index",
+               values_to = "value") |> 
+  filter(! index %in% c('entropy','theil', 'shannon')) |> 
+  ggplot() +
+  aes(x=year, y=value, linetype=country) +
+  geom_line() +
+  scale_y_log10() +
+  facet_wrap(~ sex + index) +
+  ggtitle("Evolution of dispersion indices of given names distributions")
+```
+```{r}
+
+```
+
+
+:::
+
+
+# Patterns of popularity 
+
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+df_lorenz_fr |> 
+  filter(year>1947) |> 
+  # group_by(sex, name) |> 
+  # arrange(year) |> 
+#  mutate(increase=log(rr/lag(rr))) |>
+  # ungroup() |> 
+  filter(sex=='M', name %in% c('STÉPHANE', 'KEVIN', 'ENZO')) |> 
+  ggplot() +
+  aes(x=year, y=1/(1.00001-rr), shape=name, linetype=name) +
+  geom_line() +
+  scale_y_log10()
+  
+```
+```{r}
+df_lorenz_fr |> 
+  filter(year>1947) |> 
+  group_by(sex, name) |>
+  arrange(year) |>
+  mutate(sp=slide_vec(p, mean, .before = 2, .after = 2, .complete = T)) |>
+  ungroup() |> 
+  filter(sex=='M', name %in% c('STÉPHANE', 'KEVIN', 'ENZO', 'THÉO', 'GABRIEL')) |> 
+  ggplot() +
+  aes(x=year, y=sp, shape=name, linetype=name) +
+  geom_line() +
+  scale_y_log10()
+```
+
+
+:::::
+
+
+::::: {.content-visible when-profile="solution"}  
+
+Names that were rare in 1948 and made it to the top 10 afterwards 
+
+```{r}
+df_ratio_pop <- df_lorenz_fr |> 
+  filter(year>1947) |> 
+  group_by(sex, name) |> 
+  arrange(year) |> 
+  summarise(ratiop=max(p)/min(p), 
+            maxrr=max(rr), 
+            minp=min(p), 
+            maxp=max(p), 
+            year_max = min(year) + which.max(p) -1,
+            .groups="drop") 
+```
+
+```{r}
+df_ratio_pop |> 
+  filter(name %in% c('STÉPHANE', 'ENZO', 'KEVIN', 'THÉO'))
+```
+
+
+```{r}
+df_ratio_pop |> 
+  filter(ratiop > 10) |> 
+  ggplot() +
+  aes(x=ratiop, y=after_stat(..density..)) +
+  scale_y_log10() +
+  scale_x_log10() +
+  geom_histogram( fill="white", alpha=.5, color="black") +
+#  stat_function()
+  facet_wrap(~ sex)
+  
+```
+
+
+```{r}
+df_ratio_pop <- df_lorenz_fr |> 
+  filter(year>1947) |> 
+  group_by(sex, name) |> 
+  arrange(year) |> 
+  mutate(ymax= year[which.max(p)]) |> 
+  mutate(ryear = year-ymax) |> 
+  mutate(sp=slide_vec(p, mean, .before = 2, .after = 2, .complete = T))  |> 
+  filter(between(ryear, -20, 20)) 
+
+```
+
+
+```{r}
+df_ratio_pop |> 
+  filter(name=='KEVIN', sex=='M')
+```
+
+```{r}
+(df_ratio_pop|> 
+  filter(name %in% c('STÉPHANE', 'ENZO', 'THÉO', 'KEVIN', 'JULIEN'), sex=='M') |> 
+  ggplot() +
+  aes(x=ryear, y=sp,  shape=name, linetype=name, label=ymax) +
+  geom_line() +
+  scale_y_log10() +
+  labs(title="Aligned smoothed popularity waves",
+       subtitle="") +
+  xlab("Years relative to peak year") +
+  ylab("Smoothed popularity"))|> 
+  plotly::ggplotly()
+
+```
+
+```{r}
+df_vieille_france <- df_ratio_pop |> 
+  filter(min(ryear)>=-5, max(p)>1e-3) |> 
+  distinct(sex, name) |> 
+  arrange(sex, name)
+```
+
+
+```{r}
+df_nouvelle_france <- df_ratio_pop |> 
+  filter(max(ryear)<=10, max(p)>5e-3) |> 
+  distinct(sex, name) |> 
+  arrange(sex, name)
+```
+
+```{r}
+(df_ratio_pop|> 
+  filter(name %in% pull(filter(df_nouvelle_france, sex=='M'), name), sex=='M') |> 
+  ggplot() +
+  aes(x=ryear, y=sp,  shape=name, linetype=name, label=ymax) +
+  geom_line() +
+  scale_y_log10() +
+  # labs(title="Aligned smoothed popularity waves",
+       subtitle="") +
+  xlab("Years relative to peak year") +
+  ylab("Smoothed popularity")) |>
+  plotly::ggplotly()
+```
+```{r}
+ df_ratio_pop |>
+  # filter(max(ryear)<=3, max(p)>5e-3) |> 
+  distinct(sex,name) |> 
+  arrange(sex, name)
+```
+
+:::::
