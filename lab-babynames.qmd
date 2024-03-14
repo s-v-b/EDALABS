@@ -86,7 +86,7 @@ fname <- 'nat2021_csv.zip'
 fpath <- here(path_data, fname)
 if (!file.exists(fpath)){
   url <- "https://www.insee.fr/fr/statistiques/fichier/2540004/nat2021_csv.zip"
-  download.file(url, fpath)
+  download.file(url, fpath, mode="wb")
 }   
 
 df_fr <- readr::read_csv2(fpath)
@@ -972,17 +972,17 @@ df_lorenz_fr |>
   
 ```
 ```{r}
-df_lorenz_fr |> 
+(df_lorenz_fr |> 
   filter(year>1947) |> 
   group_by(sex, name) |>
   arrange(year) |>
-  mutate(sp=slide_vec(p, mean, .before = 2, .after = 2, .complete = T)) |>
+  mutate(sp=slider::slide_vec(p, mean, .before = 2, .after = 2, .complete = T)) |>
   ungroup() |> 
-  filter(sex=='M', name %in% c('STÉPHANE', 'KEVIN', 'ENZO', 'THÉO', 'GABRIEL')) |> 
+  filter(sex=='M', name %in% c('STÉPHANE', 'KEVIN', 'ENZO', 'THÉO', 'GABRIEL', 'ARTHUR', 'LOUIS', 'JULES', 'MARCEL', 'MICHEL', 'GÉRARD')) |> 
   ggplot() +
   aes(x=year, y=sp, shape=name, linetype=name) +
   geom_line() +
-  scale_y_log10()
+  scale_y_log10()) |> plotly::ggplotly()
 ```
 
 
@@ -1008,9 +1008,15 @@ df_ratio_pop <- df_lorenz_fr |>
 
 ```{r}
 df_ratio_pop |> 
-  filter(name %in% c('STÉPHANE', 'ENZO', 'KEVIN', 'THÉO'))
+  filter(name %in% c('STÉPHANE', 'ENZO', 'KEVIN', 'THÉO'), sex=='M')
 ```
 
+```{r}
+df_ratio_pop |> 
+  filter(sex=='M') |> 
+  arrange(desc(maxp)) |> 
+  head(200)
+```
 
 ```{r}
 df_ratio_pop |> 
@@ -1033,7 +1039,7 @@ df_ratio_pop <- df_lorenz_fr |>
   arrange(year) |> 
   mutate(ymax= year[which.max(p)]) |> 
   mutate(ryear = year-ymax) |> 
-  mutate(sp=slide_vec(p, mean, .before = 2, .after = 2, .complete = T))  |> 
+  mutate(sp=slider::slide_vec(p, mean, .before = 2, .after = 2, .complete = T))  |> 
   filter(between(ryear, -20, 20)) 
 
 ```
@@ -1075,23 +1081,35 @@ df_nouvelle_france <- df_ratio_pop |>
 ```
 
 ```{r}
-(df_ratio_pop|> 
-  filter(name %in% pull(filter(df_nouvelle_france, sex=='M'), name), sex=='M') |> 
+trendy_names <- pull(filter(df_nouvelle_france, sex=='M'), name)
+spam <- (df_ratio_pop|> 
+  filter(name %in% trendy_names, sex=='M')) 
+ 
+(spam |> 
   ggplot() +
   aes(x=ryear, y=sp,  shape=name, linetype=name, label=ymax) +
   geom_line() +
   scale_y_log10() +
   # labs(title="Aligned smoothed popularity waves",
-       subtitle="") +
+#       subtitle="") +
   xlab("Years relative to peak year") +
   ylab("Smoothed popularity")) |>
   plotly::ggplotly()
 ```
 ```{r}
  df_ratio_pop |>
-  # filter(max(ryear)<=3, max(p)>5e-3) |> 
+  filter(max(ryear)<=3, max(p)>5e-3) |> 
   distinct(sex,name) |> 
   arrange(sex, name)
 ```
 
 :::::
+
+
+## Fitting a Zipf distribution
+
+
+```{r}
+
+```
+

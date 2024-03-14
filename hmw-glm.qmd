@@ -398,7 +398,7 @@ df_studentized_coef %>%
 The sample of $N$ realizations of $\widehat{\beta}^*$ : $\widehat{\beta}^*_1, \ldots, \widehat{\beta}^*_N$
 may be considered as an instance of linear regression with respect to a *random design* where the response variable is $\widehat{\beta}^*[6]$  while the explanatory variables are $\widehat{\beta}^*[1], \ldots, \widehat{\beta}^*[5]$.
 
-Compute the optimal regression coefficients. What is the distribution of $\widehat{\beta}^*[16 - \mathbb{E}\left[ \widehat{\beta}^*[6] \mid \widehat{\beta}^*[1], \ldots, \widehat{\beta}^*[5] \right]$? Investigate graphically. 
+Compute the optimal regression coefficients. What is the distribution of $\widehat{\beta}^*[6] - \mathbb{E}\left[ \widehat{\beta}^*[6] \mid \widehat{\beta}^*[1], \ldots, \widehat{\beta}^*[5] \right]$? Investigate graphically. 
 
 
 ### Diagnostic plots when the GLM assumptions hold

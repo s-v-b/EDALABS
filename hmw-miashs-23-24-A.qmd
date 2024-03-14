@@ -8,9 +8,14 @@ execute:
 
 format:
   html:
-    output-file: lab-gss.html
+    output-file: hmw-miashs-23-24-a.html
   pdf:
-    output-file: lab-gss.pdf
+    output-file: hmw-miashs-23-24-a.pdf
+  typst: 
+    output-file: hmw-miashs-23-24-a.pdf
+    columns: 1
+    toc: true
+    papersize: a4
 
 params:
   truc: html
@@ -74,13 +79,13 @@ Le package `R` nommé `ineq` met à disposition un certain nombre de concepts é
 
 On peut aussi utiliser ces mesures de l'inégalité/de la concentration pour étudier la distribution des prénoms donnés chaque année dans une société (un pays, une région, ...)
 
-Schématiquement, une distribution sur une population de $n$ individus, est un vecteur de longueur $n$ à coefficients positifs, que l'on notera $x$. Dans le cas qui nous intéresse, si $n$ prénoms distincts ont été utilisés durant une année, $x_i$ sera le nombre de fois où le prénom $i$ aura été attribué dans l'année, $x_i / \Big(\sum_{j=1}^n x_j\Big)$, représentera la part des nouveaux-nés ayant reçu le prénom $i$. 
+Schématiquement, une distribution sur une population de $n$ individus, est un vecteur de longueur $n$ à coefficients positifs, que l'on notera $x$. Dans le cas qui nous intéresse, si $n$ prénoms distincts ont été utilisés durant une année, $x_i$ sera le nombre de fois où le prénom $i$ aura été attribué dans l'année, $p_i \stackrel{\text{def}}{=}x_i / \Big(\sum_{j=1}^n x_j\Big)$, représentera la part des nouveaux-nés ayant reçu le prénom $i$ (la popularité du prénom $i$). 
 
 Quand on s'intéresse au caractère plus ou moins inégalitaire d'une distribution, l'important n'est pas qui reçoit quoi, mais quelle quantité reçoivent les mieux lotis ou les moins bien lotis. Si une distribution $y$ sur les $n$ prénoms  peut être obtenue à partir de $x$ en échangeant les rôles de quelques prénoms (par exemple en renommant les `Pierre`  en `Paul` et vice versa), $y$ est ni  plus ni moins inégalitaire que $x$. Une bonne mesure de l'inégalité des distributions doit être *invariante par permutation*. 
 
-Dans la suite, on suppose les vecteurs représentants les permutations triés par ordre croissant. Si $x$ et $y$ représentent deux distrubutions sur $n$ individus (prénoms pour nous). On dira que $x ≼ y$ ($y$ majore $x$) si pour tout $i\leq n$ 
-$$\frac{\sum_{j\leq i} x_j}{\sum_{j\leq n}   x_j} \geq  \frac{\sum_{j\leq i} y_j}{\sum_{j\leq n} y_j}$$
-autrement dit si pour tout $i\leq n$, la part de richesse allouée au $i$ moins bien lotis dans $x$ est plus grande que dans $y$. 
+Dans la suite, on suppose les vecteurs représentants les permutations triés par ordre croissant. Si $x$ et $y$ représentent deux distributions sur $n$ individus (prénoms pour nous). On dira que $x ≼ y$ ($y$ majore $x$) si pour tout $i\leq n$ 
+$$\sum_{j\leq i}p_j = \frac{\sum_{j\leq i} x_j}{\sum_{j\leq n}   x_j} \geq  \frac{\sum_{j\leq i} y_j}{\sum_{j\leq n} y_j}= \sum_{j\leq i} q_j$$
+autrement dit,  si pour tout $i\leq n$, la part de richesse allouée au $i$ moins bien lotis dans $x$ est plus grande que dans $y$. 
 
 Deux distributions de richesse sur un même ensemble ne sont pas toujours comparables au sens de l'ordre $\preceq$: il se peut que l'on n'ait ni $x \preceq y$, ni $y \preceq x$. Il s'agit d'un  *ordre partiel*.
 
@@ -106,27 +111,24 @@ soit $\phi$ est *Schur-convexe*.
 
 Sources: Section F. de  *Measuring Inequality and Diversity* dans *Inequalities: Theory of Majorization and its Applications* Marshall et Olkin. Springer-Verlag.
 
-- Mesure de Simpson
-- 
 ::: {.callout-note}
 
 ### Question
 
 Calculer pour chaque année, sexe et pays les indicateurs suivants de la dispersion/concentration de la distribution  des prénoms
 
-1. Indice de Gini (vu en cours)
-1. Entropie de Shannon 
-1. Entropie de Rényi (ordre 2)
-1. Mesure de diversité de Simpson 
+1. Indice de Gini (vu en cours)  $1 -2\int_{0}^1 L_p(z)\mathrm{d}z$
+1. Entropie de Shannon $(p_i)_{i\leq N} \mapsto \sum_{i=1}^N p_i \log_2 p_i$
+1. Entropie de Rényi (ordre 2)  $(p_i)_{i\leq N} \mapsto - \log_2\left(\sum_{i=1}^N p^2_i\right)$  (voir aussi mesure de diversité de Simpson) 
 1. Majorité minimale d'Alker
-1. Part du dernier décile
-1. Indice d'Atkinson
+1. Part du dernier décile: pour $\alpha=10\%$,   $p \mapsto 1- L_p(1-\alpha)$
+1. Indice d'Atkinson $1 - \frac{1}{N}\left(\sum_{i=1}^N  p_i^{1-a} \right)^{1/(1-a)}$ pour $a \in (0,1)$.
 
 Le résultat sera conservé dans une table où chaque ligne correspondra à un pays, une année, un sexe (la clé) avec en plus une colonne par indicateur. 
 
 :::
 
-:: {.callout-note}
+::: {.callout-note}
 
 ### Question
 
@@ -144,7 +146,17 @@ Réarrangements décroissants en analyse fonctionnelle ?
 
 ## Ajustement à une loi de Zipf
 
-Une distribution de Zipf est une  
+Une [distribution de Zipf](https://fr.wikipedia.org/wiki/Loi_de_Zipf) est classiquement une loi définie à partir le nombre d'occurrences des mots dans un texte. une loi sur $\mathbb{N}$. On utiliser cette approche pour étudier la distribution des prénoms donnés une année aux bébés d'un sexe donné: on range les prénoms par popularité décroissante, et on trace le graphe de la popularité en fonction du rang. Pour visualiser, on choisit des échelles logarithmiques pour les deux axes. On appelle ces graphes des diagrammes de Zipf.
+
+::: {.callout-note title="Question"}
+
+Tracer les digrammes de Zipf, pour les deux sexes, les USA et la France, pour les années $1950$, $1990$, et $2015$.  
+
+
+:::
+
+
+
 
 ::::: {.content-visible when-profile="solution"}  
 
