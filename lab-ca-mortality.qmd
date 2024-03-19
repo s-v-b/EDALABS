@@ -239,6 +239,52 @@ mortality_long |>
 
 :::::
 
+::: {.callout-important}
+
+### CA executive summary
+
+- Start from a 2-way contingency table $X$ with $\sum_{i,j} X_{i,j}=N$
+- Normalize $P = \frac{1}{N}X$ (_correspondance matrix_)
+- Let $r$ (resp. $c$) be the row (resp. column) wise sums vector
+- Let $D_r=\text{diag}(r)$ denote the diagonal matrix with row sums of $P$ as coefficients
+- Let $D_c=\text{diag}(c)$ denote the diagonal matrix with column sums of $P$ as coefficients
+
+
++ The _row profiles matrix_ is $D_r^{-1} \times P$
++ The _standardized residuals matrix_ is  $S = D_r^{-1/2} \times \left(P - r c^T\right) \times D_c^{-1/2}$
+
+CA consists in computing the SVD of the standardized residuals matrix $S =  U  \times D \times V^T$
+
+From the SVD, we get
+- $D_r^{-1/2} \times U$ standardized coordinates of rows
+- $D_c^{-1/2} \times V$ standardized coordinates of columns
+- $D_r^{-1/2} \times U \times D$ principal coordinates of rows
+- $D_c^{-1/2} \times V \times D$ principal coordinates of columns
+- Squared singular values: the principal inertia
+
+
+When calling `svd(.)`, the argument should be
+$$D_r^{1/2}\times \left(D_r^{-1} \times P \times D_c^{-1}- \mathbf{I}\times \mathbf{I}^T  \right)\times D_c^{1/2}$$
+
+
+:::
+
+
+::: {.callout-important}
+
+
+### CA and extended SVD
+
+As
+$$D_r^{-1} \times P \times D_c^{-1} - \mathbf{I}\mathbf{I}^T = (D_r^{-1/2} \times U)\times D \times (D_c^{-1/2}\times V)^T$$
+
+$(D_r^{-1/2} \times U)\times D \times (D_c^{-1/2}\times V)^T$ is the _extended SVD_ of
+$$D_r^{-1} \times P \times D_c^{-1} - \mathbf{I}\mathbf{I}^T$$
+with respect to $D_r$ and $D_c$
+
+
+:::
+
 
 ## Correspondance Analysis
 
@@ -515,7 +561,7 @@ We can now display scatterplots from component `coord`. This is called a Row Plo
 p_scat <-  ( 
   prep_rows |> 
     ggplot() +
-    aes(x=`Dim 1`, y=`Dim 2`, label=cause) +
+    aes(x=`Dim 1`, y=`Dim 2`, label=name) +
     geom_point() +
     coord_fixed() 
   ) 
@@ -698,6 +744,8 @@ prep_rows |>
 
 
 :::::
+
+
 
 ## Mosaicplots
 
