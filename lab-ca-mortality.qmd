@@ -239,6 +239,12 @@ mortality_long |>
 
 :::::
 
+
+
+
+## Correspondance Analysis
+
+
 ::: {.callout-important}
 
 ### CA executive summary
@@ -284,9 +290,6 @@ with respect to $D_r$ and $D_c$
 
 
 :::
-
-
-## Correspondance Analysis
 
 ::: {.callout-note}
 
@@ -554,7 +557,7 @@ M <- diag(r^(-1)) %*% P %*% diag(c^(-1)) - matrix(1, nrow=n, ncol=p)
 
 n * norm(diag(r^(1/2)) %*% M %*% diag(c^(1/2)), type = "F")^2
 ```
-We can now display scatterplots from component `coord`. This is called a Row Plot. 
+We can now display a scatterplot from component `coord`. This is called a *Row Plot*. 
 
 
 ```{r}
@@ -583,7 +586,9 @@ ppp <- prep_rows |>
     geom_point(alpha=0.75) +
     scale_size_area() +
     coord_fixed() +
-    scale_fill_viridis_c(aesthetics=c("fill", "color"),direction = 1)
+    scale_fill_viridis_c(aesthetics=c("fill", "color"), 
+                         guide="colorbar", 
+                         direction = 1) +
     ggtitle(
       "Mortality France 1979: Row plot"
     )
@@ -630,19 +635,14 @@ plot.CA(ca_79,
         invisible = c('var', 'quali'))  #, title = '', cex = cex)
 ```
 
-```{r}
-factoextra::get_ca(res.ca = ca_79)
-```
-
-
-```{r}
-# factoextra::fviz_ca_col(ca_79)
-```
-
 
 :::::   
 
 
+
+
+
+## Column profiles analysis
 
 
 ::::: {.content-visible when-profile='solution'} 
@@ -652,7 +652,6 @@ names(ca_79_row)
 ``` 
 :::::
 
-## Column profiles analysis
 
 ::::: {.content-visible when-profile="solution"}  
 
@@ -745,7 +744,42 @@ prep_rows |>
 
 :::::
 
+::: {.content-visible when-profile='solution'} 
 
+It would be convenient to use distinct color scales for  rows and columns. 
+
+ 
+```{r}
+(
+prep_rows |> 
+    ggplot() +
+    scale_size_area() +
+    coord_fixed() +
+    aes(x=`Dim 1`, 
+        y=`Dim 2`, 
+        text=name, 
+        size=prop, 
+        fill=log10(inertia)) +
+    geom_point(alpha=0.75) +
+    scale_fill_viridis_c(option="D") +
+    geom_point(data = prep_cols,
+      aes(x=`Dim 1`, 
+        y=`Dim 2`, 
+        text=name, 
+        size=prop, 
+        color=log10(inertia)
+      ),
+      shape="square",
+      alpha=.5,      
+    ) +
+    scale_color_viridis_c(option="F") +
+    theme_minimal(
+    )  
+)  |> plotly::ggplotly()
+
+```
+
+:::
 
 ## Mosaicplots
 
@@ -806,6 +840,61 @@ Build the standardized matrix for row profiles analysis. Compute the pairwise di
 
 :::
 
+::::: {.content-visible when-profile="solution"}  
+
+We use the weighted $\ell_2$ distances defined by the product of the two marginal distributions. The squared distance between the conditional probabilities defined by rows $a$ and $a'$ is 
+$$\sum_{b}  \frac{\left( N_{a,b}/N_{a,.} - N_{a',b}/N_{a',.}\right)^2}{N_{.,b}/N}$$
+
+The $\ell_2$ distance between the rows of the principal coordinates matrix `row$coord` coincides since they are all centered and normalized with respect to $(N_{.,b}/N)$. 
+
+
+```{r}
+dist_causes_79 <- ca_79$row$coord[,1:8] |> 
+  dist()
+```
+
+
+
+```{r}
+hc_79 <- hclust(dist_causes_79, method = "single")
+```
+
+```{r}
+stopifnot(
+  require(ggdendro),
+  require(dendextend),
+  require(sloop)
+)
+```
+
+The instance of `hclust` is transformed into a an object of class `dendro`.
+Class `dendro` is equipped with a variety of functions/methods for analyzing, visualizing, and exploiting the result of `hclust()`. 
+
+```{r}
+dendro_79 <- dendro_data(hc_79)
+```
+
+```{r}
+class(dendro_79)
+```
+
+```{r}
+(
+dendro_79 |> 
+  ggdendrogram(
+    leaf_labels = T, 
+    rotate = T) + 
+  ggdendro::theme_dendro() +
+  scale_y_reverse()
+  ) |> plotly::ggplotly()
+```
+
+```{r}
+
+```
+
+
+:::::
 
 ::: {.callout-note}
 
