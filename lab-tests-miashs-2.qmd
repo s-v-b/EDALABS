@@ -1,0 +1,330 @@
+---
+date: "`r Sys.time()`"
+
+execute:
+  echo: true
+  eval: true
+  collapse: true
+
+format:
+  html:
+    output-file: lab-test-miashs-2.html
+  pdf:
+    output-file: lab-test-miashs-2.pdf
+
+engine: knitr
+# server: shiny
+---
+
+```{r}
+params = list(
+  truc= "Science des Données",
+  year= 2023 ,
+  curriculum= "L3 MIASHS",
+  university= "Université Paris Cité",
+  homepage= "https://stephane-v-boucheron.fr/courses/scidon",
+  moodle= "https://moodle.u-paris.fr/course/view.php?id=13227",
+  path_data = './DATA',
+  country_code= '...',
+  country= '...',
+  datafile= '...'
+  )
+
+attach(params)
+```
+
+```{r}
+#| include: true
+#| message: false
+#| warning: false
+require(patchwork)
+require(glue)
+require(here)
+require(tidyverse)
+require(vcd)
+require(vcdExtra)
+require(ggmosaic)
+require(skimr)
+require(plotly)
+require(DT)
+require(GGally)
+require(ggforce)
+require(ggfortify)
+
+tidymodels::tidymodels_prefer(quiet = TRUE)
+
+old_theme <-theme_set(theme_minimal(base_size=9, base_family = "Helvetica"))
+```
+
+::: {layout="[80,20]"}
+
+::: {#first-column}
+
+
+
+- **`r stringr::str_glue('{params$curriculum}')`**
+- **`r stringr::str_glue('[{params$university}](https://www.u-paris.fr)')`**
+- `r stringr::str_glue("Année {params$year}-{params$year+1}")`
+- `r stringr::str_glue("[Course Homepage]({params$homepage})")`  
+- `r stringr::str_glue("[Moodle]({params$moodle})")`
+
+::: 
+
+::: {#second-column}
+![](./IMG/UniversiteParis_monogramme_couleur_RVB.png){align="right" style="size:50px;" width=75}
+:::
+
+:::
+
+
+```{r}
+#| label: setup
+#| warning: false
+#| message: false
+#| echo: true
+
+
+```
+
+
+## Testing and Confidence Intervals
+
+Gaussian setting 
+
+
+::: {.callout-note title="Question"}
+
+CI for the variance of a Gaussian distribution
+
+:::
+
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+#| label: ci-var-gauss
+#| code-fold: true
+
+```
+
+:::::
+
+::: {.callout-note title="Question"}
+
+From CI to Test 
+
+:::
+
+::::: {.content-visible when-profile="solution"}  
+
+
+
+:::::
+
+
+::: {.callout-note title="Question"}
+
+
+
+:::
+
+
+## Testing independence 
+
+Setting: a two-way contingency table
+
+A Question with several statements
+
+
+::: {.callout-note title="Question"}
+
+A multivariate CLT for counts
+
+:::
+
+::::: {.content-visible when-profile="solution"}  
+
+
+
+:::::
+
+::: {.callout-note title="Question"}
+
+Mosaicplots
+
+:::
+
+
+::::: {.content-visible when-profile="solution"}  
+
+
+
+:::::
+
+
+::: {.callout-note title="Question"}
+
+Pearson's Statistics as a pivotal quantity under null hypothesis
+
+:::
+
+::::: {.content-visible when-profile="solution"}  
+
+
+
+:::::
+
+::: {.callout-note title="Question"}
+
+Using `chisq.test()`
+
+:::
+
+::::: {.content-visible when-profile="solution"}  
+
+
+:::::
+
+
+## Visualizing multiway categorical data 
+
+Consider the  celebrated `UCBAdmissions` dataset
+
+According to `R` documentation, this dataset is made of
+
+> Aggregate data on applicants to graduate school at Berkeley for the six largest departments in 1973 classified by admission and sex.
+
+This is a compilation of `r sum(datasets::UCBAdmissions)` application files.
+
+For each application file, three variables have been reported: the `department`, the `gender` of the applicant and whether the applicant has been `admitted`
+
+The dataset is a trivariate sample, which summarized by a 3-way contingency table. 
+
+```{r}
+#| label: labelucba
+#| 
+data("UCBAdmissions")
+```
+
+::: {.callout-note title="Question"}
+
+Turn the 3-way contingency table into a dataframe/tibble with columns
+`Gender`, `Dept`, `Admit`, `n`, where the first columns are categorical, and the 
+last column counts the number of co-occurrences of the values in the first three columns amongst the UCB applicants.
+
+
+
+:::
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+#| label: UCBAlong
+#| code-fold: true
+
+UCBA_long <- UCBAdmissions |> 
+  as_tibble() 
+```
+
+
+We start from data summarized  in *table form* and obtain data summarized in *frequency form*. 
+
+[See `vcd` tutorial](https://www.datavis.ca/courses/VCD/vcd-tutorial.pdf)
+
+:::::
+
+::: {.callout-note title="Question"}
+
+Make it a bivariate sample by focusing on `Gender`  and `Admit`: compute the *margin table*
+
+Draw the corresponding mosaicplot and compute the chi-square independence statistic. 
+
+Comment.
+
+:::
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+#| label: margin-UCBA
+#| code-fold: true
+
+UCB_2 <- UCBAdmissions |>  
+  margin.table(margin=c('Gender', 'Admit')) 
+
+UCB_2
+```
+
+```{r}
+#| label: UCB-gender-admit-mosaic
+#| code-fold: true
+
+UCB_2 |> 
+  vcd::mosaic(shade=TRUE)
+```
+
+```{r}
+#| label: UCB-gender-admit-chi
+#| code-fold: true
+
+UCB_2 |> 
+  chisq.test() |> 
+  broom::tidy() |> 
+  knitr::kable()
+```
+```{r}
+#| label: chisq_at_work
+#| code-fold: true
+
+ggplot() +
+  stat_function(geom = "line", 
+                xlim = c(0, 10), 
+                fun=dchisq, args = c(df=1)) +
+  scale_y_log10()
+```
+:::::
+
+
+::: {.callout-caution}
+
+:::
+
+::: {.callout-note title="Question"}
+
+Visualize the three-way contingency table 
+
+Double-decker plots
+
+:::
+
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+#| label: UCBA-3
+#| code-fold: true
+
+aperm(UCBAdmissions, c(3, 2, 1)) |> 
+  vcd::mosaic(shade=T)
+```
+
+```{r}
+#| label: UCBA3bis
+#| code-fold: true
+
+aperm(UCBAdmissions, c(3, 2, 1)) |> 
+  vcd::doubledecker()
+```
+:::::
+
+::: {.callout-note title="Question"}
+
+
+
+:::
+
+::: {.callout-note title="Question"}
+
+
+
+:::
