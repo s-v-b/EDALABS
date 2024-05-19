@@ -243,6 +243,11 @@ $L_{t,x}= l_{t,x+1}$_
 : Residual Life Expectancy at age $x$ and year $t$
 
 
+See: *Demography: Measuring and Modeling Population Processes* by 
+SH Preston, P Heuveline, and  M Guillot. Blackwell. Oxford. 2001.
+
+- Chapter 2, on *Age-specific rates and Probabilities.* The comparison between Sweden and Kazakhstan illustrates the distinction between *crude death rates* and *age-specific death rates*, as well as the dependence of *crude death rates* on the age structure/distribution of the population. Moreover the Sweeden/Kazakhstan comparison offers a clear-cut example of the Yule-Simpson paradox.  
+- Chapter contains an important discussion of *age standardization* for cross country comparisons, why it matters, why it is difficult and remains a matter of taste. The definitions of *Life Expectancy at Birth*, or *Residual Life Expectancies* are example of age standardizations. 
 
 
 ## Western countries in 1948

@@ -32,7 +32,7 @@ engine: knitr
 - **`r glue::glue('{params$curriculum}')`** 
 - **`r stringr::str_glue('[{params$university}](https://www.u-paris.fr)')`**
 - `r stringr::str_glue("Année {params$year}-{params$year+1}")`
-- 2024-02-14 13h30-15h00  
+- 2024-04-24  
 
 :::
 
@@ -70,8 +70,9 @@ avec $\epsilon \neq0$.
 
 1. Quelle est la factorisation `QR`  de $\mathbb{X}$ ?
 2. Quelle est la _Hat_ matrice associée au design $\mathbb{X}$ (matrice de projection orthogonale sur le SEV engendré par les colonnes de $\mathbb{X}$) ?
-3. Si le vecteur réponse est $Y \in \mathbb{R}^4$, quel  est l'estimateur des moindres carrés ordinaires? (le minimisant de $\| Y - \mathbb{X}\theta\|_2^2$)
 1. Pour un design $\mathbb{X}$ de plein rang colonne ($p$), exprimer $(\mathbb{X}^\top \mathbb{X})^{-1}\mathbb{X}^\top$ à l'aide de la factorisation QR. 
+3. Si le vecteur réponse est $Y \in \mathbb{R}^4$, quel  est l'estimateur des moindres carrés ordinaires? (le minimisant de $\| Y - \mathbb{X}\theta\|_2^2$)
+
 
 
 # Normes matricielles
@@ -89,13 +90,14 @@ Dans la suite $\|.\|_{\text{HS}}$  et $\|.\|_{\text{op}}$ désignent respectivem
 :::
 
 
-1. Vérifier que si $\|.\|_i$ et $\|.\|_o$ désignent des normes sur $\mathbb{R}^n$ et $\mathbb{R}^p$ alors $f(M) = \sup_{x \in \mathbb{R}^p\setminus \{0\}} \|M x \|_o/\|x\|_i$ définit une norme sur $\mathcal{M}_{n,p}$. On dit que $f$ est la norme ubordonnée à  $\|.\|_i$ et $\|.\|_o$
+1. Vérifier que si $\|.\|_i$ et $\|.\|_o$ désignent des normes sur $\mathbb{R}^n$ et $\mathbb{R}^p$ alors $f(M) = \sup_{x \in \mathbb{R}^p\setminus \{0\}} \|M x \|_o/\|x\|_i$ définit une norme sur $\mathcal{M}_{n,p}$. On dit que $f$ est la norme subordonnée à  $\|.\|_i$ et $\|.\|_o$
+5. Si $g$ est subordonnée à $\|.\|_o$ et $\|.\|_j$,  et $f$ subordonnée à $\|.\|_i$ et $\|.\|_o$, et $h$ la norme subordonnée j à $\|.\|_i$ et $\|.\|_j$,  est-il vrai que $h(X \times M) \leq g(X) \times f(M)$ ?
 2. $\|.\|_{\text{op}}$ est-elle une norme subordonné ? si oui à quoi ?
 3. Même question pour $\|.\|_{\text{HS}}$
-4. Est-il vrai que $\|X\|_{\text{op}} \leq \|X\|_{\text{HS}} \leq max(n,p) \|X\|_{\text{op}}$?
-5. Si $g$ est subordonnée à $\|.\|_o$ et $\|.\|_j$,  et $f$ subordonnée à $\|.\|_i$ et $\|.\|_o$, et $h$ la norme subordonnée j à $\|.\|_i$ et $\|.\|_j$,  est-il vrai que $h(X \times M) \leq g(X) \times f(M)$ ?
+4. Les normes $\|.\|_{\text{HS}}$ vérifient-elles la propriété de sous-multiplicativité?
+5. Est-il vrai que $\|X\|_{\text{op}} \leq \|X\|_{\text{HS}} \leq max(n,p) \|X\|_{\text{op}}$?
 6. Existe-t-il des normes matricielles qui ne sont pas des normes subordonnées ?
-7. 
+  
 
 
 ::: {.content-visible when-profile='solution'} 
@@ -125,7 +127,7 @@ avec $U \times U^\top = \text{Id}$ et $\Lambda$ diagonale. Les vecteurs colonnes
 6. Exprimer $M^k$ à l'aide de $U$ et $\Lambda$. 
 7. Quel est le lien entre la décomposition spectrale et la trace/le déterminant?
 8. Quelle est la décomposition spectrale de $\begin{pmatrix}\sigma_x^2 & \rho \sigma_x \sigma_y \\ \rho \sigma_x \sigma_y & \sigma_y^2\end{pmatrix}$ ?
-9. 
+  
 
   
 
@@ -139,9 +141,19 @@ avec $U \times U^\top = \text{Id}$ et $\Lambda$ diagonale. Les vecteurs colonnes
 
 ::: {.callout-note}
 
+### Définition
+
+Une décomposition SVD de $X \in \mathcal{M}_{n,p}$ est une factorisation de la forme
+
 $$X = U \times D \times V^\top$$
 
+avec $U^\top \times U=\text{Id}_n$, $V^\top \times V=\text{Id}_p$, $D$ vérifiant
+$D_{i,j}=0$ si $i\neq j$, $D_{i,i}=0$ pour $i > \text{rang}(X)$, $D_{i,i}\geq D_{i+1, i+1}$.
 
+Les coefficients diagonaux de $D$ sont appelés valeurs singulières de $X$.
+Les vecteurs colonnes de $U$ (respectivement $V$) sont appelés vecteurs singuliers à gauche (respectivement à droite).  
+
+On notera les valeurs singulières non nulles de $s_1 \geq s_2 \geq \ldots \geq s_{r}$ ($r=\text{rang}(X)$).
 :::
 
 1. Si une matrice est symétrique, une décomposition spectrale est-elle toujours une factorisation SVD ?
@@ -151,7 +163,7 @@ $$X = U \times D \times V^\top$$
 5. Si $X$ est une matrice carré, proposer une relation entre la valeur absolue du déterminant de $X$ et les valeurs singulières de $X$. 
 6. Exprimer la Hat matrice en fonction de la factorisation SVD.
 7. Exprimer la pseudo-inverse de Moore-Penrose à l'aide de la factorisation SVD. 
-8. La norme-$p$ de Schatten de $X$ est définie comme la norme $\ell_p$ du vecteur des valeurs singulières de $X$. S'agit-il d'une norme ?   
+8. La norme-$p$ de Schatten de $X$ est définie comme la norme $\ell_p$ du vecteur des valeurs singulières de $X$. S'agit-il d'une norme ?
 9. Une version des inégalités  Hoffmann-Wielandt  affirme que  $\| A -B \|^2_{\text{HS}} \geq \sum_{i=1}^{\min(n,p)} |s_i(A) - s_i(B)|^2$.  Vérifier pour les matrices symétriques (supposant $n=p$), puis pour le cas général.  
 
 

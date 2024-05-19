@@ -332,13 +332,16 @@ Making $\approx$ meaningful compels us to choose a *goodness of fit* criterion.
 
 Several criteria are possible, for example:
 
-$$\begin{array}{rl}
+$$
+\begin{array}{rl}
 \text{Mean absolute deviation} & = \frac{1}{n}\sum_{i=1}^n \big|y_i - a x_i -b \big| \\ \text{Mean quadratic deviation} & = \frac{1}{n}\sum_{i=1}^n \big|y_i - a x_i -b \big|^2 
-\end{array}$$
+\end{array}
+$$
 
 In their days, Laplace championed the mean absolute deviation, while Gauss advocated the mean quadratic deviation. For computational reasons, we focus on minimizing the mean quadratic deviation.
 
 ::: {layout="[50,50]"}
+
 ::: column
 
 > The fourth chapter of Laplace treatise includes an exposition of the *method of least squares*, a remarkable testimony to Laplace's command over the processes of analysis.
@@ -356,13 +359,18 @@ In their days, Laplace championed the mean absolute deviation, while Gauss advoc
 
 :::
 
+
+
 ## Least Square Regression
 
 ### Minimizing a cost function
 
 The *Least Square Regression* problem consists of minimizing with respect to $(a,b)$ :
 
-$$\begin{array}{rl} \ell_n(a,b)  & = \sum_{i=1}^n \big(y_i - a x_i -b \big)^2  \\ & = \sum_{i=1}^n \big((y_i - \overline{Y}_n) - a (x_i - \overline{X}_n) + \overline{Y}_n - a \overline{X}_n-b \big)^2 \\ & = \sum_{i=1}^n \big((y_i - \overline{Y}_n) - a (x_i - \overline{X}_n) \big)^2 + n \big(\overline{Y}_n - a \overline{X}_n-b\big)^2 \end{array}$$
+$$
+\begin{array}{rl} \ell_n(a,b)  & = \sum_{i=1}^n \big(y_i - a x_i -b \big)^2  \\ & = \sum_{i=1}^n \big((y_i - \overline{Y}_n) - a (x_i - \overline{X}_n) + \overline{Y}_n - a \overline{X}_n-b \big)^2 \\ & = \sum_{i=1}^n \big((y_i - \overline{Y}_n) - a (x_i - \overline{X}_n) \big)^2 + n \big(\overline{Y}_n - a \overline{X}_n-b\big)^2 
+\end{array}
+$$
 
 ### Deriving the solution
 
@@ -493,6 +501,7 @@ p_scatter_gaussian %+%
 ## $y = x^T \beta + \sigma \epsilon$ : The biggest lie?
 
 ::: callout-caution
+
 -   Any numeric bivariate sample can be fed to `lm`
 
 -   Whatever the bivariate dataset, you will obtain a linear prediction model
@@ -500,6 +509,7 @@ p_scatter_gaussian %+%
 -   It is not wise to rely exclusively on the `Multiple R-squared` to assess a linear model
 
 -   {{< fa hand-point-right >}} Different datasets can lead to the same regression line and the same `Multiple R-squared` and the same `Adjusted R-squared`
+   
 :::
 
 ### Anscombe quartet
@@ -620,3 +630,105 @@ p <- anscombe_long %>%
 Among the four datasets, only the two left ones are righteously handled using simple linear regression
 
 The bottom left dataset outlines the impact of *outliers* on Least Squares Minimization
+
+
+## Regression on the Whiteside data 
+
+
+```{r}
+whiteside <- MASS::whiteside
+lm0 <- whiteside %>% 
+  lm(Gas ~ Temp, .)
+```
+
+```{r}
+lm0 |> 
+  broom::tidy() |>
+  gt::gt() |>
+  gt::fmt_number(
+    columns = -term,
+    decimals=2
+  )
+```
+
+```{r}
+p <- lm0 |> 
+  broom::augment(data=whiteside) |>
+  ggplot() +
+  aes(x=Temp, y=Gas) +
+  geom_point(aes(shape=Insul)) 
+  
+p +
+  geom_smooth(
+    formula = y ~ x,
+    method="lm",
+    se=FALSE
+    ) +
+  ggtitle("Gas ~ Temp, whiteside data")
+```
+
+
+```{r}
+lm_before <- whiteside %>% 
+  filter(Insul=="Before") %>% 
+  lm(Gas ~ Temp, .)
+
+lm_after <- whiteside %>% 
+  filter(Insul=="After") %>% 
+  lm(Gas ~ Temp, .)
+```
+
+```{r}
+p +
+  geom_smooth(
+    formula = y ~ x,
+    method="lm",
+    se=FALSE,
+    color="red",
+    ) +
+  geom_abline(
+    intercept=coefficients(lm_before)[1],
+    slope=coefficients(lm_before)[2],
+    color='blue'
+  ) +
+  geom_abline(
+    intercept=coefficients(lm_after)[1],
+    slope=coefficients(lm_after)[2],
+    color='blue'
+  ) +
+  labs(
+    title="Gas ~ Temp, whiteside data",
+    subtitle="Regressions per group in blue"
+    )
+```
+
+::: {.callout-note}
+
+### Questions
+
+- Which regression should we trust?
+- Can we build confidence interval for estimated coefficients?
+- Can we estimate noise intensity?
+- Can we trust the homoschedasticity assumption?
+- Can we trust 
+
+:::
+
+### Using diagnostic plots
+
+```{r}
+require(ggfortify)
+
+autoplot(lm0, data=whiteside, shape='Insul')
+```
+
+
+```{r}
+autoplot(lm_before)
+```
+
+
+
+```{r}
+autoplot(lm_after)
+```
