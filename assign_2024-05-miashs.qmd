@@ -80,8 +80,8 @@ $$
 - Exprimer les quartiles en fonction  des statistiques d'ordre 
 - Est-il toujours vrai que $\textsf{MAD}_n \leq \widehat{\text{sd}}_n$ ? 
 - Est-il vrai que $\textsf{MAD}_n$ peut s'écrire comme une combinaison linéaire des statistiques d'ordre ?
-- Selon vous, existe-t-il une constance $\kappa$ telle que  $\textsf{MAD}_n \leq \kappa \textsf{IQR}$ ?
-Selon vous, existe-t-il une constance $\kappa$ telle que  $\textsf{MAD}_n \geq \kappa \textsf{IQR}$ ?
+- Selon vous, existe-t-il une constante $\kappa$ telle que  $\textsf{MAD}_n \leq \kappa \textsf{IQR}$ ?
+Selon vous, existe-t-il une constante $\kappa$ telle que  $\textsf{MAD}_n \geq \kappa \textsf{IQR}$ ?
 
 :::
 
