@@ -7,6 +7,7 @@ execute:
   collapse: true
   message: false
   warning: false
+  fold: true
 
 format:
   html:
@@ -84,6 +85,7 @@ Read the [File documentation](https://www.insee.fr/fr/statistiques/2540004?somma
 path_data <- 'DATA'
 fname <- 'nat2021_csv.zip'
 fpath <- here(path_data, fname)
+
 if (!file.exists(fpath)){
   url <- "https://www.insee.fr/fr/statistiques/fichier/2540004/nat2021_csv.zip"
   download.file(url, fpath, mode="wb")
@@ -91,10 +93,11 @@ if (!file.exists(fpath)){
 
 df_fr <- readr::read_csv2(fpath)
 
-df_fr |> glimpse()
+# df_fr |> glimpse()
 ```
 
 ## US data 
+
 
 US data may be gathered from 
 
@@ -145,6 +148,7 @@ df_fr  |>
   sample(5) |>
   glimpse()
 ```
+
 1. `!!!` (bang-bang-bang) is offered by `rlang` package. Here, we use it to perform *list unpacking* (with the same intent and purposes we use dictionary unpacking in Python) 
  
 Download 'Naissances totales par sexe' from URL `https://www.ined.fr/fichier/s_rubrique/168/t35.fr.xls` from [INED](https://www.ined.fr/).
@@ -157,6 +161,7 @@ if (!file.exists(births_fr_path)) {
   download.file(births_fr_url, births_fr_path)
 }
 ```
+
 ```{r}
 births_fr <-  readxl::read_excel(births_fr_path, skip = 3)
 
@@ -181,8 +186,9 @@ names(births_fr)[1] <- "year"
 births_fr <- births_fr |>
   mutate(year=as.integer(year)) |>
   drop_na()
-  
+```  
 
+```{r}
 births_fr |>
   ggplot() +
   aes(x=year, y=`Ensemble des nés vivants`) +
@@ -212,6 +218,11 @@ births_us  |>
   aes(x=year, y=births) +
   geom_col() +
   labs(title="Births in USA")
+```
+
+
+```{r}
+
 ```
 
 
@@ -608,16 +619,17 @@ df_fr |>
 
 ### Question
 
-Plot the proportion of female births given name 'MARIE' or 'MARIE-...' as a fucntion of year. Proceed in such a way that the reader can see the share of compounded names. We are expecting an _area plot_
+Plot the proportion of female births given name 'MARIE' or 'MARIE-...' as a function of year. Proceed in such a way that the reader can see the share of compounded names. We are expecting an *area plot*
  
 :::
 
 
 ::: {.callout-tip}
 
-Have a look at [r-graph-gallery: stacked area](https://www.r-graph-gallery.com/stacked-area-graph.html)  and at [ggplot documentation](https://ggplot2.tidyverse.org/reference/geom_ribbon.html). Pay attention on the way you stack the area corresponding to names matching pattern 'MARIE-.*' over or under the are corresponding to babies named 'MARIE'
+Have a look at [r-graph-gallery: stacked area](https://www.r-graph-gallery.com/stacked-area-graph.html)  and at [ggplot documentation](https://ggplot2.tidyverse.org/reference/geom_ribbon.html). Pay attention on the way you stack the area corresponding to names matching pattern 'MARIE-...' over or under the are corresponding to babies named 'MARIE'
 
 :::
+
 
 ::: {.content-visible when-profile="solution"}
 
@@ -633,7 +645,8 @@ share_name  <- function(data, .name_stem='MARIE', .sex='F'){
   group_by(year) %>%
   summarize(strict=sum(ifelse(name==.name_stem, n, 0)),
             loose=sum(ifelse(stringr::str_starts(name, glue('{.name_stem}-')), n, 0)),
-            total=sum(n)) %>% 
+            total=sum(n)
+  ) %>% 
   transmute(year=year,
             strict=strict/total, 
             loose=loose/total) %>%
@@ -644,12 +657,15 @@ share_name  <- function(data, .name_stem='MARIE', .sex='F'){
                     levels=c("loose", "strict"), 
                     ordered=TRUE)) 
 }  
+
 ```
 
 
 ```{r}
 #| eval: false
 #| echo: false
+
+
 p_marie <-  df_fr %>% 
   share_name(.name_stem = "MARIE", .sex = "F") %T>%  # <1>
   {maxshare <<- max(pluck(., "share") , na.rm=T)} %>% # <2>
@@ -735,12 +751,14 @@ Answer the same question for JEANNE and FRANCE
 
 ```{r}
 #| eval: true
+#| 
 p_jeanne <- decline_and_fall(df_fr, "JEANNE")
 # p_jeanne
 ```
 
 ```{r}
 #| eval: true
+#| 
 p_france <- decline_and_fall(df_fr, "FRANCE")
 
 # p_france 
@@ -748,6 +766,7 @@ p_france <- decline_and_fall(df_fr, "FRANCE")
 
 ```{r}
 #| eval: true
+#| 
 patchw <- p_jeanne / p_france 
 
 patchw + plot_annotation(
@@ -802,15 +821,17 @@ way we did for male French names.
 ```{r}
 hypenames <- c('Jessica', 'Jennifer', 'Dana', 'Monica', 'Laura')
 
-(babynames %>% 
-  filter(year > 1947) |> 
-  filter(name %in% hypenames, sex=='F') %>% 
-  inner_join(babynames::births, by=c("year")) %>% 
-  ggplot() +
-  aes(x=year, y=2*n/births, linetype=name, colour=name) +
-  geom_line() +
-  scale_y_log10() +
-  ggtitle(glue("Popularities"))) |> 
+(
+  babynames %>% 
+    filter(year > 1947) |> 
+    filter(name %in% hypenames, sex=='F') %>% 
+    inner_join(babynames::births, by=c("year")) %>% 
+    ggplot() +
+      aes(x=year, y=2*n/births, linetype=name, colour=name) +
+      geom_line() +
+      scale_y_log10() +
+      ggtitle(glue("Popularities"))
+) |> 
     plotly::ggplotly()
 ```
 
@@ -863,15 +884,18 @@ Plot the popularities of  "JEAN", "LUC", "MATHIEU", "MARC", "PAUL", "PIERRE", "J
 #| include: true
 #| message: false
 #| warning: false
-q <- (df_fr %>% 
-  filter(year > 1947) |>
-  filter(name %in% prenoms, sex=="M") %>% 
-  inner_join(df_accounted_births_fr, by=c("year", "sex")) %>% 
-  ggplot() +
-  aes(x=year, y=n/total, linetype=name, colour=name) +
-  geom_line() +
-  scale_y_log10() +
-  ggtitle(glue("Popularities"))) |> 
+#| 
+q <- (
+  df_fr %>% 
+    filter(year > 1947) |>
+    filter(name %in% prenoms, sex=="M") %>% 
+    inner_join(df_accounted_births_fr, by=c("year", "sex")) %>% 
+    ggplot() +
+      aes(x=year, y=n/total, linetype=name, colour=name) +
+      geom_line() +
+      scale_y_log10() +
+      ggtitle(glue("Popularities"))
+) |> 
     plotly::ggplotly()
 
 q 
@@ -1096,6 +1120,7 @@ spam <- (df_ratio_pop|>
   ylab("Smoothed popularity")) |>
   plotly::ggplotly()
 ```
+
 ```{r}
  df_ratio_pop |>
   filter(max(ryear)<=3, max(p)>5e-3) |> 
@@ -1112,4 +1137,19 @@ spam <- (df_ratio_pop|>
 ```{r}
 
 ```
+
+::: {.callout-caution}
+
+### Choosing scales
+
+
+:::
+
+Animation 
+
+
+## Classifying names according to their pattern of popularity
+
+Now, we focus on names that made it to the top $300$ at least once since year 1948. We attempt to classify them according to their pattern  of popularity, 
+
 

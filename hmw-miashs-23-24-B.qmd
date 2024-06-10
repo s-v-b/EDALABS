@@ -485,3 +485,15 @@ Ceci n'est pas un devoir d'Histoire. Ne cherchez pas à montrer votre culture. D
 
 
 :::
+
+
+::::: {.content-visible when-profile="solution"}  
+
+```{r}
+life_table |> 
+  filter(Country=='France', between(Year,1895,1905), Gender=='Female', Age %in% c(0,1)) |> 
+  select(Year, Age, ex)
+```
+
+
+:::::
