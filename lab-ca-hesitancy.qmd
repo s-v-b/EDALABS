@@ -1,71 +1,54 @@
 ---
-title: 'TP Correpondence Analysis'
-subtitle: 'Université Paris Cité -- M1 ISIFAR'
-author: "A.F., S.G.,  S.H., S.B"
-date: "`r Sys.Date()`"
+date: "`r Sys.time()`"
+
+execute:
+  echo: true
+  eval: true
+  collapse: true
+
+format:
+  html:
+    output-file: lab-ca-hesitancy.html
+  pdf:
+    output-file: lab-ca-hesitancy.pdf
+
 params:
-  datapath: '../DATA'
-  title: "Vaccine Hesitancy, Correspondence Analysis"
-  curriculum: "Master I ISIFAR"
-  coursetitle: "Analyse de Données"
-  lecturer: "Stéphane Boucheron"
-  homepage: "http://stephane-v-boucheron.fr/courses/isidata/"
-output:
-  html_document:
-    css: hideOutput.css
-    includes:
-      in_header: hideOutput.script
-    code_folding: hide
-    df_print: paged
-    toc: yes
-    toc_depth: '1'
-  html_notebook:
-    css: hideOutput.css
-    includes:
-      after_body: footer.html
-      before_body: header.html
-      in_header: hideOutput.script
-    code_folding: hide
-    number_sections: yes
-    toc: yes
-    toc_depth: 1
-  pdf_document:
-    toc: yes
-    toc_depth: '1'
-institute: Université Paris Cité
+  truc: html
+  year: 2023 
+  curriculum: "M1 MIDS/MFA"
+  university: "Université Paris Cité"
+  homepage: "https://stephane-v-boucheron.fr/courses/eda"
+  moodle: "https://moodle.u-paris.fr/course/view.php?id=13227"
+  
+engine: knitr
 ---
 
-<style>
-.btn {
-    border-width: 0 0px 0px 0px;
-    font-weight: normal;
-    text-transform: ;
-}
-.btn-default {
-    color: #2ecc71;
-    background-color: #ffffff;
-    border-color: #ffffff;
-}
-</style>
 
-```{r, message=FALSE, echo=FALSE}
-pacman::p_load(tidyverse)
-pacman::p_load(DT)
-pacman::p_load(skimr)
-pacman::p_load(GGally)
-pacman::p_load(broom)
-pacman::p_load(patchwork)
-pacman::p_load(ggforce)
-pacman::p_load(ggmosaic)
-pacman::p_load(ggfortify)
-pacman::p_load(vcd)
-pacman::p_load(plotly)
-pacman::p_load(viridis)
-pacman::p_load(FactoMineR)
-pacman::p_load(factoextra)
-pacman::p_load(FactoInvestigate)
-pacman::p_load(lobstr)
-pacman::p_load("factoextra")
+```{r}
+#| message: FALSE
+#| echo: FALSE
+#| 
+
+ 
+stopifnot(
+  require(tidyverse),
+  require(DT),
+  require(skimr),
+  require(GGally),
+  require(broom),
+  require(patchwork),
+  require(ggforce),
+  require(ggmosaic),
+  require(ggfortify),
+  require(vcd),
+  require(plotly),
+  require(viridis),
+  require(FactoMineR),
+  require(factoextra),
+  require(FactoInvestigate),
+  require(lobstr),
+  require(factoextra)
+)
 
 old_theme <-theme_set(theme_bw(base_size=9, base_family = "Helvetica"))
 ```
@@ -88,6 +71,26 @@ knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(out.width="50%", fig.show='hold')
 ```
 
+
+
+::: {layout="[80,20]"}
+
+::: {#first-column}
+
+
+- **`r stringr::str_glue('{params$curriculum}')`**
+- **`r stringr::str_glue('[{params$university}](https://www.u-paris.fr)')`**
+- `r stringr::str_glue("Année {params$year}-{params$year+1}")`
+- `r stringr::str_glue("[Course Homepage]({params$homepage})")`  
+- `r stringr::str_glue("[Moodle]({params$moodle})")`
+
+::: 
+
+::: {#second-column}
+![](./IMG/UniversiteParis_monogramme_couleur_RVB.png){align="right" style="size:50px;" width=75}
+:::
+
+:::
 
 
 
