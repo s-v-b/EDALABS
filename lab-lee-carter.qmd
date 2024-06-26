@@ -135,12 +135,12 @@ life_table <- readr::read_rds(fpath)
 ```
 
 ```{r}
-life_table %>%
-  dplyr::mutate(Country = forcats::as_factor(Country)) %>%
-  dplyr::mutate(Country = forcats::fct_relevel(Country, "Spain", "Italy", "France", "England & Wales", "Netherlands", "Sweden", "USA")) %>%
+life_table |>
+  dplyr::mutate(Country = forcats::as_factor(Country)) |>
+  dplyr::mutate(Country = forcats::fct_relevel(Country, "Spain", "Italy", "France", "England & Wales", "Netherlands", "Sweden", "USA")) |>
   dplyr::mutate(Gender = forcats::as_factor(Gender)) -> life_table
 
-life_table %>%
+life_table |>
   dplyr::mutate(Area =forcats::fct_collapse(Country, 
                                             SE = c("Spain", "Italy", "France"), 
                                             NE = c("England & Wales", "Netherlands", "Sweden"), 
@@ -176,7 +176,7 @@ by a _cohort_ (people born during a specific year).
 > One  works with a period, or current, life table (_table du moment_). This summarizes the mortality experience of persons across all ages in a short period, typically one year or three years. More precisely, the death probabilities $q(x)$ for every age $x$ are computed for that short period, often using census information gathered at regular intervals. These $q(x)$'s are then applied to a hypothetical cohort of $100 000$ people over their life span to produce a life table. 
 
 ```{r}
-life_table %>% 
+life_table |> 
   filter(Country=='France', Year== 2010, Gender=='Female', Age < 10 | Age > 80)
 ```
 
@@ -187,16 +187,16 @@ In the sequel, we denote by $F_{t}$ the _cumulative distribution function_ for y
 
 ```{r}
 #| label: "sanity checks"
-life_table %>% 
-  filter( Year>=1948) %>% 
-  group_by(Country, Year, Gender) %>% 
+life_table |> 
+  filter( Year>=1948) |> 
+  group_by(Country, Year, Gender) |> 
   summarise(m1 =max(abs(lx -dx -lead(lx)), na.rm = T), 
             m2 =max(abs(lx * qx -dx), na.rm=T),
             m3 =max(abs(Lx -lx * (1 + qx * (ax-1))), na.rm=T),
-            m4 =max(abs(1-exp(-mx)-qx), na.rm=T)) %>% 
-  select(Year, Country, Gender, m1, m2, m3, m4) %>%  
-  ungroup() %>% 
-  group_by(Country, Gender) %>% 
+            m4 =max(abs(1-exp(-mx)-qx), na.rm=T)) |> 
+  select(Year, Country, Gender, m1, m2, m3, m4) |>  
+  ungroup() |> 
+  group_by(Country, Gender) |> 
   slice_max(order_by = desc(m4), n = 1)
 ```
 
@@ -251,8 +251,8 @@ This is helpful if we have to use window functions.
 lt <- dbplyr::memdb_frame(select(life_table,
                                  Year, Age, qx, Country, Gender))
 
-lt %>%
-  filter(Gender == 'Female', Country== 'USA', 'Year'==1948) %>%
+lt |>
+  filter(Gender == 'Female', Country== 'USA', 'Year'==1948) |>
   show_query()
 ```
 
@@ -301,7 +301,7 @@ proto_plot <- ggplot(dummy_data,
 
 with(params,
   (proto_plot %+% (
-    life_table %>% 
+    life_table |> 
     dplyr::filter(Year %in% c(year_p, year_e), 
       Age<90,
        Gender != 'Both')) +
@@ -310,7 +310,7 @@ with(params,
     labs(title = glue("European countries and US, {year_p}-{year_e}"),
     subtitle = "Sweden and the Netherlands consistently ahead") +
     facet_grid(rows=vars(Year), cols=vars(Gender))
-  ) %>% 
+  ) |> 
     plotly::ggplotly()
 )
 ```
@@ -331,11 +331,11 @@ proto_plt2 <-
 
 with(params,
   (proto_plt2 %+%
-    (life_table %>% 
+    (life_table |> 
       filter(between(Year, year_p, year_e), 
              Gender != 'Both', 
              Age < 90))  +
-    ggtitle("Central death rates 1948-2013: Europe catches up"))) %>%
+    ggtitle("Central death rates 1948-2013: Europe catches up"))) |>
   plotly::ggplotly()
 
 ```
@@ -365,25 +365,25 @@ central death rates in the USA in 1948.
 ```{r, message=FALSE, warning=FALSE, echo=FALSE}
 
 simplified_life_table <- with(params, 
-                              life_table %>%
-  dplyr::filter(between(Year, year_p, year_e), Age<90, Gender!="Both") %>%
+                              life_table |>
+  dplyr::filter(between(Year, year_p, year_e), Age<90, Gender!="Both") |>
   dplyr::select(Age, Year, Country, qx, Gender, Area))
 
-eur_table <- simplified_life_table %>%
+eur_table <- simplified_life_table |>
   dplyr::filter(Country!='USA')
 
-us_table <- simplified_life_table %>%
-  dplyr::filter(Country=='USA') %>%
+us_table <- simplified_life_table |>
+  dplyr::filter(Country=='USA') |>
   dplyr::select(-Area, -Country)
 
-eur_us_table <-  eur_table %>%
-  dplyr::inner_join(us_table, by=c('Age', 'Year', 'Gender')) %>%
+eur_us_table <-  eur_table |>
+  dplyr::inner_join(us_table, by=c('Age', 'Year', 'Gender')) |>
   dplyr::mutate(Ratio=qx.x/qx.y)
 ```
 
 ```{r}
 with(params,
-(eur_us_table  %>%
+(eur_us_table  |>
   ggplot(aes(x=Age,
              y=Ratio,
              col=Area,
@@ -397,7 +397,7 @@ with(params,
   labs(linetype="Country", color="Area") +
   # scale_colour_brewer(direction=-1) +
   ggtitle(label = stringr::str_c("European countries with respect to US,", year_p,'-', year_e, sep = " "), subtitle = "Sweden consistently ahead") +
-  facet_grid(rows = vars(Gender)))) %>%
+  facet_grid(rows = vars(Gender)))) |>
   ggplotly()
 
 ```
@@ -425,8 +425,8 @@ post_ww_II <- with(params,
   seq(year_p, year_e, 10)
 )
 
-p <- life_table %>%
-  filter(FALSE) %>%
+p <- life_table |>
+  filter(FALSE) |>
   ggplot(aes(x=Age,
              y=qx,
              col=forcats::as_factor(Year),
@@ -437,11 +437,11 @@ p <- life_table %>%
   facet_grid(rows=vars(Country), cols=vars(Gender))
 
 (p  %+%
-  (life_table %>% dplyr::filter(Year %in% post_ww_II, Gender!="Both",
+  (life_table |> dplyr::filter(Year %in% post_ww_II, Gender!="Both",
                                 Age < 90,
                                 Country %in% c('Spain', 'USA'))) +
   ggtitle(stringr::str_c("Mortality quotient per Age", sep=", "),
-          subtitle = "Post WW II")) %>%
+          subtitle = "Post WW II")) |>
   ggplotly()
 ```
 
@@ -477,8 +477,8 @@ in `Country` for `Gender`.
 ratio_mortality_rates <- function(df,
                                   reference_year=1946,
                                   target_years=seq(1946, 2016, 10)){
-  dplyr::filter(df, Year %in% target_years, Age <90) %>%
-  dplyr::select("Age", "Area", "Gender", "Country", "qx", "Year") %>%
+  dplyr::filter(df, Year %in% target_years, Age <90) |>
+  dplyr::select("Age", "Area", "Gender", "Country", "qx", "Year") |>
   dplyr::inner_join(y=df[df$Year==reference_year,
                          c("Age", "Gender", "Country", "qx")],
                     by=c("Age", "Gender", "Country"))
@@ -503,8 +503,8 @@ df_ratios <- ratio_mortality_rates(filter(life_table,
 
 
 ```{r full_comparison_template, echo=FALSE}
-q <- df_ratios %>%
-  dplyr::filter(FALSE) %>%
+q <- df_ratios |>
+  dplyr::filter(FALSE) |>
   ggplot(aes(x=Age,
              y=qx.x/qx.y,
              linetype=forcats::as_factor(Year),
@@ -520,8 +520,8 @@ q <- df_ratios %>%
 ```
 
 ```{r frame_full_comparison, message=FALSE, warning=FALSE, echo=FALSE}
-qf <- df_ratios %>%
-#  dplyr::filter(FALSE) %>%
+qf <- df_ratios |>
+#  dplyr::filter(FALSE) |>
   ggplot(aes(x=Age,
              y=qx.x/qx.y,
              linetype=Country,
@@ -539,7 +539,7 @@ qf <- df_ratios %>%
 ```
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-qf %>% ggplotly()
+qf |> ggplotly()
 ```
 
 
@@ -565,7 +565,7 @@ We noticed that central death rates did not evolve in the same way across all ag
 ```{r infant_mort_rate, echo=FALSE, warning=FALSE, message=FALSE}
 ages <- c(0, 1, 5)
 
-p_children <- filter(life_table, FALSE) %>%
+p_children <- filter(life_table, FALSE) |>
   ggplot(mapping=aes(x=Year, y=qx,
                      linetype=forcats::as_factor(Age),
                      shape=forcats::as_factor(Age),
@@ -634,8 +634,8 @@ The resulting schema should look like:
 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
-life_table %>%
-  dplyr::select(Country, Gender, Year, Age, qx) %>%
+life_table |>
+  dplyr::select(Country, Gender, Year, Age, qx) |>
   tidyr::pivot_wider(names_from = "Age",
                      values_from = "qx") ->  life_table_pivot
 ```
@@ -643,8 +643,8 @@ life_table %>%
 - [x] Using `life_table_pivot` compute life expectancy at birth for each Country, Gender and Year
 
 ```{r, echo=FALSE}
-life_table_pivot %>%
-  dplyr::select(-c(Country, Gender, Year)) %>%
+life_table_pivot |>
+  dplyr::select(-c(Country, Gender, Year)) |>
   as.matrix() -> tmp
 
 apply(1- tmp,
@@ -653,7 +653,7 @@ apply(1- tmp,
 
 rm(tmp)
 
-tibble::add_column(life_table_pivot, lex=round(lex, 2)) %>%
+tibble::add_column(life_table_pivot, lex=round(lex, 2)) |>
   dplyr::select(Country, Year, Gender, lex) -> lex_table
 
 rm(lex)
@@ -698,15 +698,15 @@ wide_grouped_life_table <- function(life_table,
                                     genders = c("Male", "Female"),
                                     lim_age = c(0, 89),
                                     lim_year = c(1948, 2013)) {
-  life_table %>%
+  life_table |>
     dplyr::filter(Country != 'Sweden',
                   Gender %in% genders,
                   between(Year, lim_year[1], lim_year[2]),
-                  between(Age, lim_age[1], lim_age[2])) %>% 
-    dplyr::select(Country, Gender, Year, Age, qx) %>%
-    dplyr::mutate(lqx = log(qx)) %>%
-    dplyr::select(-qx) %>%
-    tidyr::pivot_wider(names_from = Age, values_from = lqx) %>%
+                  between(Age, lim_age[1], lim_age[2])) |> 
+    dplyr::select(Country, Gender, Year, Age, qx) |>
+    dplyr::mutate(lqx = log(qx)) |>
+    dplyr::select(-qx) |>
+    tidyr::pivot_wider(names_from = Age, values_from = lqx) |>
     dplyr::group_by(Country, Gender)
 }
 ```
@@ -715,8 +715,8 @@ wide_grouped_life_table <- function(life_table,
 wg_lt <- wide_grouped_life_table(life_table)
 
 group_pca <- function(df, scale_or_not=TRUE){
-  df %>%
-    tibble::column_to_rownames("Year") %>%
+  df |>
+    tibble::column_to_rownames("Year") |>
     dudi.pca(scannf = FALSE, nf=5, center = TRUE, scale = scale_or_not) 
 }
 
@@ -788,10 +788,10 @@ cbind(
   purrr::map_df(list_pcas, 
                 ~ '[['(., 'key')), 
                 (purrr::map(list_pcas, 
-                            ~ .[['value']][['eig']][1:5]) %>%
-                 do.call(rbind, .) %>% 
+                            ~ .[['value']][['eig']][1:5]) |>
+                 do.call(rbind, .) |> 
                  data.frame())
-  ) %>% 
+  ) |> 
  tidyr::pivot_longer(cols = starts_with("X"), 
                      names_to="Component", 
                      values_to = "Magnitude")
@@ -802,7 +802,7 @@ df_screeplots_ns <- buid_stack_screeplots(pcas_by_country_gender_ns)
 ```
 
 ```{r screeplots, fig.cap=""}
-dplyr::group_by(df_screeplots, Gender) %>% 
+dplyr::group_by(df_screeplots, Gender) |> 
   dplyr::group_map(.f = ~ (layout(plot_ly(data = .x, 
                                   x = ~Component, 
                                   y = ~Magnitude, 
@@ -811,7 +811,7 @@ dplyr::group_by(df_screeplots, Gender) %>%
                                    yaxis = list(title = 'Eigenvalue'), 
                                    barmode = 'group')
                            )
-                   ) %>% subplot(shareY = TRUE)  %>% 
+                   ) |> subplot(shareY = TRUE)  |> 
   layout(title = "Screeplots with standardization", 
          annotations = list(
  list(x = 0.2 , y = 1.05, text = "Females", showarrow = F, xref='paper', yref='paper'),
@@ -823,7 +823,7 @@ dplyr::group_by(df_screeplots, Gender) %>%
 
 
 ```{r screeplots_ns, fig.cap=""}
-dplyr::group_by(df_screeplots_ns, Gender) %>% 
+dplyr::group_by(df_screeplots_ns, Gender) |> 
   dplyr::group_map(.f = ~ (layout(plot_ly(data = .x, 
                                   x = ~Component, 
                                   y = ~Magnitude, 
@@ -832,7 +832,7 @@ dplyr::group_by(df_screeplots_ns, Gender) %>%
                                    yaxis = list(title = 'Eigenvalue'), 
                                    barmode = 'group')
                            )
-                   ) %>% subplot(shareY = TRUE)  %>% 
+                   ) |> subplot(shareY = TRUE)  |> 
   layout(title = "Screeplots without standardization", 
          annotations = list(
  list(x = 0.2 , y = 1.05, text = "Females", showarrow = F, xref='paper', yref='paper'),
@@ -847,8 +847,8 @@ But for all six countries and two genders, most of the inertia is captured by th
 
 
 ```{r}
-df_screeplots_ns %>% 
-  dplyr::group_by(Country, Gender) %>% 
+df_screeplots_ns |> 
+  dplyr::group_by(Country, Gender) |> 
   dplyr::summarise(Inertia = round(sum(Magnitude),2))
 ```
 
@@ -874,9 +874,9 @@ scree_win2 <- dbplyr::win_over(
 ```
 
 ```{r}
-tb_screeplots_ns %>% 
-  dplyr::mutate(cumInertia=scree_win1) %>% 
-  dplyr::mutate(shareInertia=scree_win2) %>% 
+tb_screeplots_ns |> 
+  dplyr::mutate(cumInertia=scree_win1) |> 
+  dplyr::mutate(shareInertia=scree_win2) |> 
   as.data.frame() -> df_screeplots_ns2
 
 df_screeplots_ns2
@@ -886,7 +886,7 @@ df_screeplots_ns2
 
 
 ```{r}
-dplyr::group_by(df_screeplots_ns2, Gender) %>% 
+dplyr::group_by(df_screeplots_ns2, Gender) |> 
   dplyr::group_map(.f = ~ (layout(plot_ly(data = .x, 
                                   x = ~Component, 
                                   y = ~shareInertia, 
@@ -895,7 +895,7 @@ dplyr::group_by(df_screeplots_ns2, Gender) %>%
                                    yaxis = list(title = 'Share of inertia'), 
                                    barmode = 'group')
                            )
-                   ) %>% subplot(shareY = TRUE)  %>% 
+                   ) |> subplot(shareY = TRUE)  |> 
   layout(title = "Screeplots without standardization", 
          annotations = list(
  list(x = 0.2 , y = 1.05, text = "Females", showarrow = F, xref='paper', yref='paper'),
@@ -922,7 +922,7 @@ The correlation circle delivered by `ade4` is not readable:
 
 
 ```{r multicocircle, warning=FALSE}
-pcas_by_country_gender %>%
+pcas_by_country_gender |>
   purrr::map( ~ add_column(.[['value']][['co']], Age=0:89)) -> list_df_co_circles
 
 list_df_co_circles[[4]] -> datum
@@ -963,7 +963,7 @@ plot_ly(datum,
         hoverinfo = 'text', 
         color = ~Comp1^2 + Comp2^2,
         mode= 'markers'
-        ) %>% 
+        ) |> 
   layout(title = "Correlation circle with standardization", 
          annotations = list(
  list(x = 0.2 , y = 1.05, text = "Females", showarrow = F, xref='paper', yref='paper')
@@ -997,7 +997,7 @@ purrr::map(list_df_co_circles, fun_co_circle) -> list_circo_plots
 ```
 
 ```{r mother_of_cocircles}
-subplot(list_circo_plots, nrows = 6, shareX = TRUE, shareY = TRUE) %>% 
+subplot(list_circo_plots, nrows = 6, shareX = TRUE, shareY = TRUE) |> 
   layout(title = "Correlation circles with standardization", 
          annotations = list(
   list(x = 0.2 , y = 1.05, text = "Female", showarrow = F, xref='paper', yref='paper'),
@@ -1008,7 +1008,7 @@ subplot(list_circo_plots, nrows = 6, shareX = TRUE, shareY = TRUE) %>%
 
 
 ```{r}
-cocircles_annotations <- list_df_co_circles %>% 
+cocircles_annotations <- list_df_co_circles |> 
   purrr::map()
 ```
 
@@ -1035,7 +1035,7 @@ data frame (so to ages).
 list_df_co_circles[[3]] -> data
 
 ggplotly(
-data %>%
+data |>
   ggplot(aes(x=Comp1, 
              y= Comp2, 
              color=forcats::as_factor(Age %/% 20), shape=forcats::as_factor(Age %/% 20))) +
@@ -1080,13 +1080,13 @@ Looking at the variables on the plane generated by the second and third principa
 
 
 ```{r}
-list_df_co_circles[[3]] %>%
-  dplyr::mutate(Age = forcats::as_factor(Age %/% 20)) %>%
+list_df_co_circles[[3]] |>
+  dplyr::mutate(Age = forcats::as_factor(Age %/% 20)) |>
   dplyr::mutate(Age = dplyr::recode(.[['Age']] ,`0`="0-19 years",
                                 `1`="20-39 years",
                                 `2`="40-59 years",
                                 `3`="60-79 years",
-                                `4`="80-99 years")) %>%
+                                `4`="80-99 years")) |>
 plot_ly(x=~Comp1,
         y=~Comp2,
         type = "scatter",
@@ -1096,7 +1096,7 @@ plot_ly(x=~Comp1,
 
 
 ```{r compute_list_lis, echo=FALSE}
-pcas_by_country_gender %>%
+pcas_by_country_gender |>
   purrr::map( ~ add_column(.[['value']][['li']], Year=year_p:year_e)) -> list_df_li
 ```
 
@@ -1120,7 +1120,7 @@ gglicircle <- function(datum) {
 
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
-multiplot(plotlist=(list_df_li %>%
+multiplot(plotlist=(list_df_li |>
                       purrr::map(gglicircle)), cols = 2, byrow = TRUE)
 ```
 
@@ -1142,11 +1142,11 @@ Performing PCA without centering and normalizzation is disappointing. The first 
 ## Assessing quality of reconstruction through truncated SVD
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE, eval=FALSE}
-lt %>%
-  dplyr::filter(Year %in% 1948:2013, Gender != 'Both', Country != 'Sweden') %>%
-  dplyr::select(Country, Gender, Year, qx) %>%
-  dplyr::mutate(qx =log(qx)) %>%
-  dplyr::group_by(Country, Gender) %>%
+lt |>
+  dplyr::filter(Year %in% 1948:2013, Gender != 'Both', Country != 'Sweden') |>
+  dplyr::select(Country, Gender, Year, qx) |>
+  dplyr::mutate(qx =log(qx)) |>
+  dplyr::group_by(Country, Gender) |>
   dplyr::summarise(aqx = mean(qx), stdqx = sd(qx)) -> means_log_qx
 ```
 
@@ -1155,19 +1155,19 @@ lt %>%
 
 ```{r, echo=FALSE, eval=FALSE}
 group_svd<- function(df){
-  df %>%
-    tibble::column_to_rownames("Year") %>%
-    scale(center = TRUE, scale=FALSE) %>%
+  df |>
+    tibble::column_to_rownames("Year") |>
+    scale(center = TRUE, scale=FALSE) |>
     svd(nu = 2, nv=2) 
   }
 
-life_table %>%
-    dplyr::filter(Gender != 'Both', Year>= year_p, Year<=year_e, Age <90, Country != 'Sweden') %>%
-    dplyr::select(Country, Gender, Year, Age, qx) %>%
-    dplyr::mutate(lqx = log(qx)) %>%
-    dplyr::select(-qx) %>%
-    tidyr::pivot_wider(names_from = Age, values_from = lqx) %>%
-    dplyr::group_by(Country, Gender) %>%
+life_table |>
+    dplyr::filter(Gender != 'Both', Year>= year_p, Year<=year_e, Age <90, Country != 'Sweden') |>
+    dplyr::select(Country, Gender, Year, Age, qx) |>
+    dplyr::mutate(lqx = log(qx)) |>
+    dplyr::select(-qx) |>
+    tidyr::pivot_wider(names_from = Age, values_from = lqx) |>
+    dplyr::group_by(Country, Gender) |>
     dplyr::group_map(.f = ~ list(key=.y , value=try(group_svd(.x)))) -> svd_by_country_gender
 
 ```
@@ -1175,14 +1175,14 @@ life_table %>%
 
 
 ```{r, echo=FALSE, eval=FALSE}
-life_table %>%
-    dplyr::filter(Gender != 'Both', Year>= year_p, Year<=year_e, Age <100) %>%
-    dplyr::select(Country, Gender, Year, Age, qx) %>%
-    dplyr::mutate(lqx = log10(qx)) %>%
-    dplyr::select(-qx) %>%
-    tidyr::pivot_wider(names_from = Age, values_from = lqx) %>%
-    dplyr::filter(Gender == 'Male', Country == 'England & Wales') %>%
-    dplyr::select(- Gender, - Country) %>%
+life_table |>
+    dplyr::filter(Gender != 'Both', Year>= year_p, Year<=year_e, Age <100) |>
+    dplyr::select(Country, Gender, Year, Age, qx) |>
+    dplyr::mutate(lqx = log10(qx)) |>
+    dplyr::select(-qx) |>
+    tidyr::pivot_wider(names_from = Age, values_from = lqx) |>
+    dplyr::filter(Gender == 'Male', Country == 'England & Wales') |>
+    dplyr::select(- Gender, - Country) |>
     tibble::column_to_rownames(var = 'Year') -> EnWales
 ```
 
@@ -1252,10 +1252,10 @@ qplot(x=1:100, y=EnWales_2[66,]) +
   corresponding to couples `(Country, Age)`.
 
 ```{r, echo=FALSE, eval=FALSE}
-life_table %>%
-  dplyr::filter(Country %in% c("USA", "France"), Year %in% 1948:2013, Gender=='Female') %>%
-  dplyr::select(Country, Year, Age, qx) %>%
-  dplyr::mutate(qx = log(qx)) %>%
+life_table |>
+  dplyr::filter(Country %in% c("USA", "France"), Year %in% 1948:2013, Gender=='Female') |>
+  dplyr::select(Country, Year, Age, qx) |>
+  dplyr::mutate(qx = log(qx)) |>
   tidyr::pivot_wider(id_cols=c(Year),
                      names_from=c(Country, Age),
                      values_from=c(qx)) -> truc

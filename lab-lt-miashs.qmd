@@ -143,12 +143,12 @@ life_table <- readr::read_rds(fpath)
 ```
 
 ```{r}
-life_table <- life_table %>%
-  mutate(Country = as_factor(Country)) %>%
-  mutate(Country = fct_relevel(Country, "Spain", "Italy", "France", "England & Wales", "Netherlands", "Sweden", "USA")) %>%
+life_table <- life_table |>
+  mutate(Country = as_factor(Country)) |>
+  mutate(Country = fct_relevel(Country, "Spain", "Italy", "France", "England & Wales", "Netherlands", "Sweden", "USA")) |>
   mutate(Gender = as_factor(Gender)) 
 
-life_table <- life_table %>%
+life_table <- life_table |>
   mutate(Area = fct_collapse(Country, 
                         SE = c("Spain", "Italy", "France"), 
                         NE = c("England & Wales", "Netherlands", "Sweden"), 
@@ -175,7 +175,7 @@ is a _construction_ that reflects the health situation in a population at a give
 > One  works with a period, or current, life table (_table du moment_). This summarizes the mortality experience of persons across all ages in a short period, typically one year or three years. More precisely, the death probabilities $q(x)$ for every age $x$ are computed for that short period, often using census information gathered at regular intervals. These $q(x)$'s are then applied to a hypothetical cohort of $100 000$ people over their life span to produce a life table. 
 
 ```{r}
-life_table %>% 
+life_table |> 
   filter(Country=='France', Year== 2010, Gender=='Female', Age < 10 | Age > 80 & Age <90) |> 
   knitr::kable()
 ```
@@ -197,16 +197,16 @@ The life tables are highly redundant. Provided we get the right conventions we c
 
 ```{r}
 #| label: "sanity checks"
-life_table %>% 
-  filter( Year>=1948) %>% 
-  group_by(Country, Year, Gender) %>% 
+life_table |> 
+  filter( Year>=1948) |> 
+  group_by(Country, Year, Gender) |> 
   summarise(m1 =max(abs(lx -dx -lead(lx)), na.rm = T), 
             m2 =max(abs(lx * qx -dx), na.rm=T),
             m3 =max(abs(Lx -lx * (1 + qx * (ax-1))), na.rm=T),
-            m4 =max(abs(1-exp(-mx)-qx), na.rm=T)) %>% 
-  select(Year, Country, Gender, m1, m2, m3, m4) %>%  
-  ungroup() %>% 
-  group_by(Country, Gender) %>% 
+            m4 =max(abs(1-exp(-mx)-qx), na.rm=T)) |> 
+  select(Year, Country, Gender, m1, m2, m3, m4) |>  
+  ungroup() |> 
+  group_by(Country, Gender) |> 
   slice_max(order_by = desc(m4), n = 1)
 ```
 
@@ -285,12 +285,12 @@ Plot `qx` of all Countries at all ages for years 1948 and 2013.
 ```{r 65_years, message=FALSE, warning=FALSE, echo=FALSE}
 
 with(params,
-(proto_plot %+% (life_table %>% dplyr::filter(Year %in% c(year_p, year_e), Age<90, Gender != 'Both')) +
+(proto_plot %+% (life_table |> dplyr::filter(Year %in% c(year_p, year_e), Age<90, Gender != 'Both')) +
                geom_point(size=.1) +
                geom_line(size=.2) +
                labs(title = glue("European countries and US, {year_p}-{year_e}"),
                        subtitle = "Sweden and the Netherlands consistently ahead") +
-               facet_grid(rows=vars(Year), cols=vars(Gender))) %>% plotly::ggplotly()
+               facet_grid(rows=vars(Year), cols=vars(Gender))) |> plotly::ggplotly()
 )
 ```
 
@@ -310,8 +310,8 @@ proto_plt2 <-
 
 with(params,
 (proto_plt2 %+%
-  (life_table %>% filter(between(Year, year_p, year_e), Gender != 'Both', Age < 90))  +
-  ggtitle("Central death rates 1948-2013: Europe catches up"))) %>%
+  (life_table |> filter(between(Year, year_p, year_e), Gender != 'Both', Age < 90))  +
+  ggtitle("Central death rates 1948-2013: Europe catches up"))) |>
   plotly::ggplotly()
 
 ```
@@ -347,26 +347,26 @@ Plot ratios between mortality quotients (`qx`) in European countries and mortali
 ```{r, message=FALSE, warning=FALSE}
 
 simplified_life_table <- with(params, 
-                              life_table %>%
-  dplyr::filter(between(Year, year_p, year_e), Age<90, Gender!="Both") %>%
+                              life_table |>
+  dplyr::filter(between(Year, year_p, year_e), Age<90, Gender!="Both") |>
   dplyr::select(Age, Year, Country, qx, Gender, Area))
 
-eur_table <- simplified_life_table %>%
+eur_table <- simplified_life_table |>
   dplyr::filter(Country!='USA')
 
-us_table <- simplified_life_table %>%
-  dplyr::filter(Country=='USA') %>%
+us_table <- simplified_life_table |>
+  dplyr::filter(Country=='USA') |>
   dplyr::select(-Area, -Country)
 
-eur_us_table <-  eur_table %>%
-  dplyr::inner_join(us_table, by=c('Age', 'Year', 'Gender')) %>%
+eur_us_table <-  eur_table |>
+  dplyr::inner_join(us_table, by=c('Age', 'Year', 'Gender')) |>
   dplyr::mutate(Ratio=qx.x/qx.y)
 ```
 
 ```{r}
 #| eval: false
 with(params,
-(eur_us_table  %>%
+(eur_us_table  |>
   ggplot(aes(x=Age,
              y=Ratio,
              col=Area,
@@ -379,7 +379,7 @@ with(params,
   ylab("Ratio of mortality quotients with respect to US") +
   labs(linetype="Country", color="Area") +
   ggtitle(label = stringr::str_c("European countries with respect to US,", year_p,'-', year_e, sep = " "), subtitle = "Sweden consistently ahead") +
-  facet_grid(rows = vars(Gender))) %>%
+  facet_grid(rows = vars(Gender))) |>
   ggplotly()
 )
 ```
@@ -414,8 +414,8 @@ both genders as a function of `Age` for  years `1946, 1956, ...` up to `2016` .
 #| eval: true
 post_ww_II <- with(params, seq(year_p, year_e, 10))
 
-p <- life_table %>%
-  filter(FALSE) %>%
+p <- life_table |>
+  filter(FALSE) |>
   ggplot(aes(x=Age,
              y=qx,
              col=forcats::as_factor(Year),
@@ -429,11 +429,11 @@ p <- life_table %>%
 ```{r}
 #| eval: false
 (p  %+%
-  (life_table %>% dplyr::filter(Year %in% post_ww_II, Gender!="Both",
+  (life_table |> dplyr::filter(Year %in% post_ww_II, Gender!="Both",
                                 Age < 90,
                                 Country %in% c('Spain', 'USA'))) +
   ggtitle(stringr::str_c("Mortality quotient per Age", sep=", "),
-          subtitle = "Post WW II")) %>%
+          subtitle = "Post WW II")) |>
   ggplotly()
 ```
 
@@ -476,8 +476,8 @@ in `Country` for `Gender`.
 ratio_mortality_rates <- function(df,
                                   reference_year=1946,
                                   target_years=seq(1946, 2016, 10)){
-  dplyr::filter(df, Year %in% target_years, Age <90) %>%
-  dplyr::select("Age", "Area", "Gender", "Country", "qx", "Year") %>%
+  dplyr::filter(df, Year %in% target_years, Age <90) |>
+  dplyr::select("Age", "Area", "Gender", "Country", "qx", "Year") |>
   dplyr::inner_join(y=df[df$Year==reference_year,
                          c("Age", "Gender", "Country", "qx")],
                     by=c("Age", "Gender", "Country"))
@@ -510,8 +510,8 @@ df_ratios <- ratio_mortality_rates(filter(life_table,
 
 ```{r full_comparison_template}
 #| eval: true
-q <- df_ratios %>%
-  dplyr::filter(FALSE) %>%
+q <- df_ratios |>
+  dplyr::filter(FALSE) |>
   ggplot(aes(x=Age,
              y=qx.x/qx.y,
              linetype=forcats::as_factor(Year),
@@ -528,8 +528,8 @@ q <- df_ratios %>%
 
 ```{r frame_full_comparison, message=FALSE, warning=FALSE}
 #| eval: true
-qf <- df_ratios %>%
-#  dplyr::filter(FALSE) %>%
+qf <- df_ratios |>
+#  dplyr::filter(FALSE) |>
   ggplot(aes(x=Age,
              y=qx.x/qx.y,
              linetype=Country,
@@ -548,7 +548,7 @@ qf <- df_ratios %>%
 
 ```{r, warning=FALSE, message=FALSE}
 #| eval: false
-qf %>% ggplotly()
+qf |> ggplotly()
 ```
 
 
@@ -583,7 +583,7 @@ Plot mortality quotients at ages $0, 1, 5$  as a function of time. Facet by Gend
 #| eval: false
 ages <- c(0, 1, 5)
 
-p_children <- filter(life_table, FALSE) %>%
+p_children <- filter(life_table, FALSE) |>
   ggplot(mapping=aes(x=Year, y=qx,
                      linetype=forcats::as_factor(Age),
                      shape=forcats::as_factor(Age),
@@ -777,7 +777,8 @@ facet by `Gender` and `Country`.
   ggplot() +
   aes(x=Year, y=resLifExp, linetype=Age, color=Age, shape=Age) +
   geom_line() +
-  facet_grid(rows=vars(Country), cols=vars(Gender))) |> 
+  facet_grid(rows=vars(Country), cols=vars(Gender))
+ ) |> 
   plotly::ggplotly()
 ```
 
